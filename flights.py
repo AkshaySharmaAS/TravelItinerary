@@ -1,44 +1,44 @@
 """
-Flight route data using OpenFlights open dataset — no API key required.
-Data: https://openflights.org/data  (CC BY 4.0)
+Live flight search via SerpApi — returns real Google Flights data:
+actual prices, flight numbers, departure/arrival times, layovers, aircraft.
 
-On first use, downloads three small CSV files (~3 MB total) from the
-OpenFlights GitHub mirror and caches them to disk.  Subsequent starts
-load instantly from the cache.  Completely offline after first fetch.
+Free tier: 100 searches / month, no credit card.
+Sign up at https://serpapi.com  →  copy your API key  →  set SERPAPI_KEY in .env
+
+Falls back gracefully to None when the key is missing or a search fails,
+so the itinerary is still generated without flight data.
 """
 
 import csv
+import json
 import math
 import os
+import urllib.parse
 import urllib.request
 from typing import Dict, List, Optional, Tuple
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "openflights_data")
-
+# ── OpenFlights airport data (for city → IATA code lookup only) ───────────────
+_DATA_DIR     = os.path.join(os.path.dirname(os.path.abspath(__file__)), "openflights_data")
 _AIRPORTS_URL = "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat"
-_AIRLINES_URL = "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airlines.dat"
 _ROUTES_URL   = "https://raw.githubusercontent.com/jpatokal/openflights/master/data/routes.dat"
 
-# In-memory caches — loaded once per process
-_airports: Optional[Dict[str, dict]] = None
-_airlines: Optional[Dict[str, str]] = None
-_routes:   Optional[Dict[Tuple[str, str], List[str]]] = None
+_airports_cache: Optional[Dict[str, dict]] = None
+_routes_cache:   Optional[Dict[Tuple[str, str], int]] = None   # (src,dst) → count (unused here, but used for ranking)
+_route_counts:   Optional[Dict[str, int]] = None               # iata → total routes
 
-
-# ── Data loading ──────────────────────────────────────────────────────────────
 
 def _fetch(fname: str, url: str) -> str:
-    os.makedirs(DATA_DIR, exist_ok=True)
-    path = os.path.join(DATA_DIR, fname)
+    os.makedirs(_DATA_DIR, exist_ok=True)
+    path = os.path.join(_DATA_DIR, fname)
     if not os.path.exists(path):
         urllib.request.urlretrieve(url, path)
     return path
 
 
 def _airports_db() -> Dict[str, dict]:
-    global _airports
-    if _airports is not None:
-        return _airports
+    global _airports_cache
+    if _airports_cache is not None:
+        return _airports_cache
     result: Dict[str, dict] = {}
     with open(_fetch("airports.dat", _AIRPORTS_URL), encoding="utf-8", errors="ignore") as f:
         for row in csv.reader(f):
@@ -57,61 +57,41 @@ def _airports_db() -> Dict[str, dict]:
                 "country": row[3].strip('"'),
                 "lat": lat, "lon": lon,
             }
-    _airports = result
+    _airports_cache = result
     return result
 
 
-def _airlines_db() -> Dict[str, str]:
-    global _airlines
-    if _airlines is not None:
-        return _airlines
-    result: Dict[str, str] = {}
-    with open(_fetch("airlines.dat", _AIRLINES_URL), encoding="utf-8", errors="ignore") as f:
-        for row in csv.reader(f):
-            if len(row) < 8:
-                continue
-            iata   = row[3].strip().strip('"')
-            name   = row[1].strip('"')
-            active = row[7].strip().strip('"')
-            if iata and iata != r"\N" and len(iata) <= 3 and active == "Y":
-                result[iata] = name
-    _airlines = result
-    return result
+def _route_count_db() -> Dict[str, int]:
+    """Returns {iata: number_of_routes} — used to rank airports for a city."""
+    global _route_counts
+    if _route_counts is not None:
+        return _route_counts
+    counts: Dict[str, int] = {}
+    try:
+        with open(_fetch("routes.dat", _ROUTES_URL), encoding="utf-8", errors="ignore") as f:
+            for row in csv.reader(f):
+                if len(row) < 5:
+                    continue
+                src, dst = row[2].strip(), row[4].strip()
+                if src and src != r"\N" and len(src) == 3:
+                    counts[src] = counts.get(src, 0) + 1
+                if dst and dst != r"\N" and len(dst) == 3:
+                    counts[dst] = counts.get(dst, 0) + 1
+    except Exception:
+        pass
+    _route_counts = counts
+    return counts
 
 
-def _routes_db() -> Dict[Tuple[str, str], List[str]]:
-    """{ (src_iata, dst_iata): [airline_iata, ...] }  — direct flights only."""
-    global _routes
-    if _routes is not None:
-        return _routes
-    result: Dict[Tuple[str, str], List[str]] = {}
-    with open(_fetch("routes.dat", _ROUTES_URL), encoding="utf-8", errors="ignore") as f:
-        for row in csv.reader(f):
-            if len(row) < 8:
-                continue
-            airline = row[0].strip()
-            src     = row[2].strip()
-            dst     = row[4].strip()
-            stops   = row[7].strip()
-            if (not airline or airline == r"\N" or
-                    not src or src == r"\N" or len(src) != 3 or
-                    not dst or dst == r"\N" or len(dst) != 3 or
-                    stops != "0"):
-                continue
-            key = (src, dst)
-            if airline not in result.get(key, []):
-                result.setdefault(key, []).append(airline)
-    _routes = result
-    return result
-
-
-# ── City → IATA lookup ────────────────────────────────────────────────────────
-
-def _city_iata(city_str: str, airports: Dict, routes: Dict) -> Optional[str]:
-    """Return the IATA code of the busiest airport in the given city."""
+def _city_iata(city_str: str) -> Optional[str]:
+    """
+    Returns the IATA code of the busiest airport serving a city.
+    Busiest = most routes in OpenFlights data → almost always the main international hub.
+    """
     city_name = city_str.split(",")[0].strip().lower()
+    airports   = _airports_db()
+    rcounts    = _route_count_db()
 
-    # Exact city match first, then partial
     exact, partial = [], []
     for iata, info in airports.items():
         c = info["city"].lower()
@@ -123,145 +103,191 @@ def _city_iata(city_str: str, airports: Dict, routes: Dict) -> Optional[str]:
     candidates = exact or partial
     if not candidates:
         return None
-
     if len(candidates) == 1:
         return candidates[0]
 
-    # Pick the busiest airport by total route count
-    def _route_count(iata: str) -> int:
-        return sum(1 for s, d in routes if s == iata or d == iata)
-
-    return max(candidates, key=_route_count)
+    return max(candidates, key=lambda x: rcounts.get(x, 0))
 
 
-# ── Geo / time helpers ────────────────────────────────────────────────────────
+# ── SerpApi call ──────────────────────────────────────────────────────────────
 
-def _km(lat1, lon1, lat2, lon2) -> float:
-    R = 6371.0
-    p1, p2 = math.radians(lat1), math.radians(lat2)
-    a = (math.sin(math.radians(lat2 - lat1) / 2) ** 2
-         + math.cos(p1) * math.cos(p2) * math.sin(math.radians(lon2 - lon1) / 2) ** 2)
-    return 2 * R * math.asin(math.sqrt(a))
-
-
-def _fmt_dur(hours: float) -> str:
-    h, m = int(hours), int((hours % 1) * 60)
-    return f"{h}h {m:02d}m"
-
-
-def _price(km: float) -> Tuple[int, int]:
-    """Rough economy price range in USD."""
-    base = 80 + km * 0.11
-    return int(base), int(base * 1.45)
-
-
-# ── Main entry point ──────────────────────────────────────────────────────────
-
-def search_flights(
-    origin_city: str,
-    destination: str,
-    departure_date: Optional[str] = None,
-    adults: int = 1,
-    max_results: int = 4,
-) -> Optional[str]:
-    """
-    Look up real airline routes from the OpenFlights open dataset.
-    Returns a formatted text block for the Claude prompt, or None if no data.
-    """
-    try:
-        airports = _airports_db()
-        airlines = _airlines_db()
-        routes   = _routes_db()
-    except Exception as exc:
-        print(f"OpenFlights data error: {exc}")
+def _serpapi_flights(orig: str, dest: str, date: str, adults: int) -> Optional[dict]:
+    api_key = os.getenv("SERPAPI_KEY", "").strip()
+    if not api_key:
         return None
 
-    orig_iata = _city_iata(origin_city, airports, routes)
-    dest_iata = _city_iata(destination, airports, routes)
+    params = {
+        "engine":        "google_flights",
+        "departure_id":  orig,
+        "arrival_id":    dest,
+        "outbound_date": date,
+        "currency":      "USD",
+        "hl":            "en",
+        "type":          "2",          # one-way
+        "adults":        str(adults),
+        "api_key":       api_key,
+    }
+    url = "https://serpapi.com/search.json?" + urllib.parse.urlencode(params)
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "TravelAgentCRM/1.0"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception as exc:
+        print(f"SerpApi request failed: {exc}")
+        return None
+
+
+# ── Formatting helpers ────────────────────────────────────────────────────────
+
+def _mins(m: int) -> str:
+    h, mn = divmod(int(m), 60)
+    return f"{h}h {mn:02d}m"
+
+
+def _time(iso: str) -> str:
+    """'2025-08-01 14:35' → '14:35'"""
+    return iso[11:] if len(iso) > 10 else iso
+
+
+def _day_offset(dep: str, arr: str) -> str:
+    try:
+        from datetime import datetime
+        d = (datetime.fromisoformat(arr).date() - datetime.fromisoformat(dep).date()).days
+        return f" (+{d}d)" if d > 0 else ""
+    except Exception:
+        return ""
+
+
+# ── Public entry point ────────────────────────────────────────────────────────
+
+def search_flights(
+    origin_city:    str,
+    destination:    str,
+    departure_date: Optional[str] = None,
+    adults:         int = 1,
+    max_results:    int = 4,
+) -> Optional[str]:
+    """
+    Returns a formatted flight-data block for the Claude prompt, or None.
+    Requires SERPAPI_KEY env var and a departure_date.
+    """
+    if not departure_date:
+        return None
+    if not os.getenv("SERPAPI_KEY", "").strip():
+        return None
+
+    try:
+        orig_iata = _city_iata(origin_city)
+        dest_iata = _city_iata(destination)
+    except Exception:
+        return None
+
     if not orig_iata or not dest_iata:
         return None
 
-    orig = airports[orig_iata]
-    dest = airports[dest_iata]
-    dist = _km(orig["lat"], orig["lon"], dest["lat"], dest["lon"])
-    if dist < 1:
-        return None  # same airport
-
-    direct_hours = dist / 850 + 0.75   # 850 km/h cruise + 45 min ground
-    lo_p, hi_p   = _price(dist)
-
-    # ── Direct routes ─────────────────────────────────────────────────────────
-    direct_airlines = routes.get((orig_iata, dest_iata), [])
-
-    # ── 1-stop options ────────────────────────────────────────────────────────
-    one_stop: List[dict] = []
-    if len(direct_airlines) < max_results:
-        outbound_hubs = {d for (s, d) in routes if s == orig_iata}
-        inbound_hubs  = {s for (s, d) in routes if d == dest_iata}
-        shared_hubs   = outbound_hubs & inbound_hubs
-
-        for hub in list(shared_hubs)[:20]:
-            a1 = routes.get((orig_iata, hub), [])
-            a2 = routes.get((hub, dest_iata), [])
-            if not a1 or not a2 or hub not in airports:
-                continue
-            h = airports[hub]
-            d1 = _km(orig["lat"], orig["lon"], h["lat"], h["lon"])
-            d2 = _km(h["lat"], h["lon"], dest["lat"], dest["lon"])
-            via_hrs = (d1 + d2) / 850 + 0.75 + 2.0  # 2h layover
-            one_stop.append({
-                "hub": hub, "hub_city": h["city"],
-                "a1": a1[0], "a2": a2[0],
-                "hours": via_hrs,
-            })
-        one_stop.sort(key=lambda x: x["hours"])
-
-    if not direct_airlines and not one_stop:
+    data = _serpapi_flights(orig_iata, dest_iata, departure_date, adults)
+    if not data:
         return None
 
-    date_line = f"Departure date: {departure_date}" if departure_date else "Date: not specified — suggest typical schedules"
+    all_offers: List[dict] = data.get("best_flights", []) + data.get("other_flights", [])
+    if not all_offers:
+        return None
 
+    airports   = _airports_db()
+    orig_city  = airports.get(orig_iata, {}).get("city", origin_city.split(",")[0])
+    dest_city  = airports.get(dest_iata, {}).get("city", destination.split(",")[0])
+
+    sep = "=" * 56
     lines = [
-        "━" * 52,
-        f"REAL ROUTE DATA (OpenFlights open dataset)",
-        f"{origin_city.split(',')[0].strip()} ({orig_iata}) → {destination.split(',')[0].strip()} ({dest_iata})",
-        f"Great-circle distance: ~{int(dist):,} km  |  Est. flight time: {_fmt_dur(direct_hours)}",
-        date_line,
-        "Incorporate these real airlines and route details verbatim into the ✈️ Getting There section.",
-        "━" * 52,
+        sep,
+        "LIVE FLIGHT DATA  (Google Flights via SerpApi)",
+        f"{orig_city} ({orig_iata})  →  {dest_city} ({dest_iata})  |  {departure_date}",
+        "All prices are per person, economy class, from Google Flights.",
+        "Use these exact details verbatim in the ✈️ Getting There section.",
+        sep,
     ]
 
-    opt = 1
-    for code in direct_airlines[:max_results]:
-        name = airlines.get(code, code)
-        lines.append(
-            f"\nOption {opt} — Non-stop ✅\n"
-            f"  Airline : {name} ({code})\n"
-            f"  Route   : {orig_iata} → {dest_iata}\n"
-            f"  Duration: ~{_fmt_dur(direct_hours)}\n"
-            f"  Price   : USD {lo_p}–{hi_p} per person (economy, estimated)\n"
-            f"  Tip     : Suggest realistic departure/arrival times for this route"
-        )
-        opt += 1
+    parsed = 0
+    for offer in all_offers[:max_results]:
+        try:
+            segs      = offer.get("flights", [])
+            layovers  = offer.get("layovers", [])
+            price     = offer.get("price")
+            total_dur = offer.get("total_duration", 0)
 
-    needed = max(0, max_results - len(direct_airlines))
-    for s in one_stop[:needed]:
-        a1n = airlines.get(s["a1"], s["a1"])
-        a2n = airlines.get(s["a2"], s["a2"])
-        lines.append(
-            f"\nOption {opt} — 1 Stop\n"
-            f"  Airlines: {a1n} ({s['a1']}) + {a2n} ({s['a2']})\n"
-            f"  Route   : {orig_iata} → {s['hub']} ({s['hub_city']}) → {dest_iata}\n"
-            f"  Duration: ~{_fmt_dur(s['hours'])} incl. layover\n"
-            f"  Price   : USD {max(50, lo_p - 80)}–{lo_p + 60} per person (economy, estimated)\n"
-            f"  Tip     : Suggest a 1.5–2.5h layover at {s['hub_city']}"
-        )
-        opt += 1
+            if not segs:
+                continue
+
+            first_seg = segs[0]
+            last_seg  = segs[-1]
+            dep_ap    = first_seg["departure_airport"]
+            arr_ap    = last_seg["arrival_airport"]
+
+            dep_time  = _time(dep_ap.get("time", ""))
+            arr_time  = _time(arr_ap.get("time", ""))
+            offset    = _day_offset(dep_ap.get("time", ""), arr_ap.get("time", ""))
+
+            # Deduplicated airlines in order
+            airlines    = list(dict.fromkeys(s.get("airline", "") for s in segs))
+            airline_str = " + ".join(a for a in airlines if a)
+
+            # Flight numbers
+            flight_nums = "  →  ".join(s.get("flight_number", "?") for s in segs)
+
+            stops      = len(segs) - 1
+            stop_label = "Non-stop ✅" if stops == 0 else f"{stops} stop{'s' if stops > 1 else ''}"
+
+            # Aircraft (first segment)
+            aircraft   = first_seg.get("airplane", "")
+            aircraft_s = f"\n  Aircraft: {aircraft}" if aircraft else ""
+
+            # Layover detail
+            layover_s  = ""
+            for lv in layovers:
+                lv_name = lv.get("name", lv.get("id", ""))
+                lv_dur  = _mins(lv.get("duration", 0))
+                overnight = "  ⚠️ overnight" if lv.get("overnight") else ""
+                layover_s += f"\n  Layover : {lv_name} — {lv_dur}{overnight}"
+
+            price_s = f"USD {price:,}" if price else "check airline site"
+
+            # Carbon emissions vs typical
+            co2 = offer.get("carbon_emissions", {})
+            co2_diff = co2.get("difference_percent")
+            co2_s = ""
+            if co2_diff is not None:
+                label = "above" if co2_diff > 0 else "below"
+                co2_s = f"\n  Carbon  : {abs(co2_diff)}% {label} average for this route"
+
+            lines.append(
+                f"\nOption {parsed + 1}:  {airline_str}  |  {stop_label}\n"
+                f"  Flights : {flight_nums}\n"
+                f"  Departs : {dep_ap.get('name','?')} ({dep_ap.get('id','?')})  at  {dep_time}\n"
+                f"  Arrives : {arr_ap.get('name','?')} ({arr_ap.get('id','?')})  at  {arr_time}{offset}\n"
+                f"  Duration: {_mins(total_dur)}"
+                f"{aircraft_s}"
+                f"{layover_s}"
+                f"{co2_s}\n"
+                f"  💰 Price : {price_s} per person"
+            )
+            parsed += 1
+        except (KeyError, TypeError, IndexError):
+            continue
+
+    if parsed == 0:
+        return None
+
+    # Price insight if available
+    insight = data.get("price_insights", {})
+    if insight.get("typical_price_range"):
+        lo, hi = insight["typical_price_range"]
+        lines.append(f"\n📊 Typical price range for this route: USD {lo:,} – {hi:,}")
 
     lines += [
         "",
-        "→ Recommend Option 1 as the primary choice; mention others as budget/time alternatives.",
-        "→ Include specific realistic departure and arrival times, and bag allowance notes.",
-        "━" * 52,
+        "→ Recommend the best-value option (balance of price, duration, stops).",
+        "→ Quote exact flight numbers, departure/arrival times, and airport full names.",
+        "→ Mention baggage allowance and check-in tips for the recommended airline.",
+        sep,
     ]
     return "\n".join(lines)

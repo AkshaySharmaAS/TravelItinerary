@@ -159,7 +159,7 @@ def _stream_itinerary(trip_data: dict, api_key: str):
     # ── Step 1: fetch real flight data ───────────────────────────────────────
     flight_block = ""
     if trip_data.get("start_date"):
-        yield f"data: {json.dumps({'type': 'status', 'message': '✈️ Searching for real flights...'})}\n\n"
+        yield f"data: {json.dumps({'type': 'status', 'message': '✈️ Fetching live flights from Google Flights...'})}\n\n"
         try:
             flight_block = search_flights(
                 origin_city=trip_data["departure_city"],
@@ -169,7 +169,7 @@ def _stream_itinerary(trip_data: dict, api_key: str):
         except Exception:
             flight_block = ""
         if flight_block:
-            yield f"data: {json.dumps({'type': 'status', 'message': '✈️ Live flight data retrieved! Building itinerary...'})}\n\n"
+            yield f"data: {json.dumps({'type': 'status', 'message': '✈️ Live flights found! Crafting your itinerary...'})}\n\n"
         else:
             yield f"data: {json.dumps({'type': 'status', 'message': 'Connecting to Claude AI...'})}\n\n"
     else:
