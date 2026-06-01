@@ -251,10 +251,19 @@ def _stream_itinerary(trip_data: dict, api_key: str):
         f"**Special Requests:** {trip_data['notes']}\n"
         if trip_data.get("notes") else ""
     )
+    agent_notes_line = (
+        f"**Agent's Requested Changes:** {trip_data['agent_notes']}\n"
+        if trip_data.get("agent_notes") else ""
+    )
     flight_section = f"\n\n{flight_block}\n\n" if flight_block else ""
     no_date_note = (
         "\nNote: No start date provided — use typical seasonal weather patterns.\n"
         if not trip_data.get("start_date") else ""
+    )
+    regen_instruction = (
+        "\nIMPORTANT: This is a REVISED itinerary. You MUST address every point in "
+        "\"Agent's Requested Changes\" above. Keep what was good; fix what was flagged.\n"
+        if trip_data.get("agent_notes") else ""
     )
 
     user_prompt = (
@@ -265,7 +274,9 @@ def _stream_itinerary(trip_data: dict, api_key: str):
         f"{start_date_line}"
         f"{budget_line}"
         f"{notes_line}"
+        f"{agent_notes_line}"
         f"{no_date_note}"
+        f"{regen_instruction}"
         f"{flight_section}"
         f"Follow the exact structure from your instructions. Cover all {trip_data['num_days']} days with "
         f"Morning / Afternoon / Evening sections. "
@@ -530,7 +541,7 @@ def submit_review(
 # ── Itinerary generation (no auth required) ───────────────────────────────────
 
 @app.get("/api/trips/{trip_id}/generate-itinerary")
-def generate_itinerary(trip_id: int, db: Session = Depends(get_db)):
+def generate_itinerary(trip_id: int, with_review: bool = False, db: Session = Depends(get_db)):
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
@@ -538,6 +549,10 @@ def generate_itinerary(trip_id: int, db: Session = Depends(get_db)):
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY environment variable not set")
+
+    agent_notes = None
+    if with_review and trip.review and trip.review.comment:
+        agent_notes = trip.review.comment
 
     trip_data = {
         "id": trip.id,
@@ -549,6 +564,7 @@ def generate_itinerary(trip_id: int, db: Session = Depends(get_db)):
         "budget": trip.budget,
         "budget_type": trip.budget_type or "overall",
         "notes": trip.notes,
+        "agent_notes": agent_notes,
     }
 
     return StreamingResponse(

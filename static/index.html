@@ -406,9 +406,14 @@
           <label class="form-label fw-semibold" style="font-size:.88rem">Comment <span class="text-muted fw-normal">(optional)</span></label>
           <textarea class="form-control" id="review-comment" rows="3" placeholder="Notes for the customer or the team…"></textarea>
         </div>
-        <button class="btn btn-primary btn-sm" id="btn-submit-review">
-          <i class="fa-solid fa-paper-plane me-1"></i>Submit Review
-        </button>
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-primary btn-sm" id="btn-submit-review">
+            <i class="fa-solid fa-paper-plane me-1"></i>Submit Review
+          </button>
+          <button class="btn btn-warning btn-sm" id="btn-regen-with-changes" style="display:none">
+            <i class="fa-solid fa-rotate me-1"></i>Re-generate with Changes
+          </button>
+        </div>
       </div>
       <!-- shown when NOT logged in -->
       <div id="review-login-prompt" class="review-login-prompt" style="display:none">
@@ -1074,6 +1079,9 @@ function renderReviewPanel(review) {
     document.getElementById('review-status').value = 'accepted';
     document.getElementById('review-comment').value = '';
   }
+  // Show re-generate button only when there are suggested changes with a comment
+  const showRegen = loggedIn && review && review.status === 'changes_suggested' && review.comment;
+  document.getElementById('btn-regen-with-changes').style.display = showRegen ? '' : 'none';
 }
 
 document.getElementById('btn-submit-review').addEventListener('click', async () => {
@@ -1086,6 +1094,11 @@ document.getElementById('btn-submit-review').addEventListener('click', async () 
     renderReviewPanel(t.review);
     toast('Review submitted', 'success');
   } catch(e) { toast('Error: '+e.message,'danger'); }
+});
+
+document.getElementById('btn-regen-with-changes').addEventListener('click', () => {
+  if (!currentTripId || streaming) return;
+  streamItinerary(currentTripId, true);
 });
 
 // ─────────────────────────────────────────────
@@ -1144,12 +1157,12 @@ function resetItinUI() {
 // ─────────────────────────────────────────────
 // Streaming
 // ─────────────────────────────────────────────
-document.getElementById('btn-generate').addEventListener('click', () => { if (!currentTripId || streaming) return; streamItinerary(currentTripId); });
+document.getElementById('btn-generate').addEventListener('click', () => { if (!currentTripId || streaming) return; streamItinerary(currentTripId, false); });
 document.getElementById('btn-back').addEventListener('click', () => { showView('trips'); document.querySelector('[data-view="trips"]').classList.add('active'); loadTrips(); });
 document.getElementById('btn-edit-td').addEventListener('click', () => editTrip(currentTripId));
 document.getElementById('btn-export-pdf').addEventListener('click', () => window.print());
 
-async function streamItinerary(tripId) {
+async function streamItinerary(tripId, withReview = false) {
   streaming = true;
   document.getElementById('btn-generate').disabled = true;
   document.getElementById('btn-export-pdf').style.display = 'none';
@@ -1160,10 +1173,11 @@ async function streamItinerary(tripId) {
   const contentEl = document.getElementById('itinerary-content');
   contentEl.style.display = 'none'; contentEl.innerHTML = '';
   thinkEl.style.display = 'flex';
-  document.getElementById('thinking-msg').textContent = 'Starting…';
+  document.getElementById('thinking-msg').textContent = withReview ? 'Applying agent changes…' : 'Starting…';
   let raw = '';
   try {
-    const resp = await fetch(`/api/trips/${tripId}/generate-itinerary`);
+    const url = `/api/trips/${tripId}/generate-itinerary` + (withReview ? '?with_review=true' : '');
+    const resp = await fetch(url);
     if (!resp.ok) throw new Error('HTTP '+resp.status);
     const reader = resp.body.getReader();
     const dec = new TextDecoder();
