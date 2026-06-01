@@ -11,23 +11,6 @@
     *, *::before, *::after { box-sizing: border-box; }
     body { min-height: 100vh; background: #f4f6fb; font-family: 'Segoe UI', system-ui, sans-serif; }
 
-    /* ── Login overlay ────────────────────────────────────────────────────── */
-    #login-screen {
-      position: fixed; inset: 0; z-index: 9999;
-      background: linear-gradient(135deg, #1a2236 0%, #243155 60%, #1e3c72 100%);
-      display: flex; align-items: center; justify-content: center;
-    }
-    #login-screen.hidden { display: none; }
-    .login-card {
-      background: #fff; border-radius: 18px; padding: 40px 36px;
-      width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,.4);
-    }
-    .login-card .brand-logo { text-align: center; margin-bottom: 24px; }
-    .login-card .brand-logo i { font-size: 2.4rem; color: #4ea8ff; }
-    .login-card .brand-logo h2 { font-size: 1.3rem; font-weight: 800; color: #1a2236; margin: 8px 0 2px; }
-    .login-card .brand-logo p { color: #6c757d; font-size: .85rem; margin: 0; }
-    .login-error { font-size: .84rem; }
-
     /* ── Mobile top bar ───────────────────────────────────────────────────── */
     .mobile-bar {
       display: none;
@@ -54,11 +37,20 @@
     #sidebar nav .nav-link:hover, #sidebar nav .nav-link.active { color: #fff; background: rgba(255,255,255,.08); border-left-color: #4ea8ff; }
     #sidebar nav .nav-link i { width: 18px; text-align: center; }
 
-    /* Sidebar user footer */
-    .sidebar-user {
-      padding: 14px 18px; border-top: 1px solid rgba(255,255,255,.1);
-      display: flex; align-items: center; gap: 10px;
+    /* Sidebar footer — sign-in or user info */
+    .sidebar-footer { padding: 14px 16px; border-top: 1px solid rgba(255,255,255,.1); }
+
+    /* When not logged in */
+    .sidebar-footer .signin-btn {
+      width: 100%; background: rgba(78,168,255,.15); border: 1px solid rgba(78,168,255,.35);
+      color: #7ec8ff; border-radius: 8px; padding: 9px 14px; font-size: .86rem;
+      font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
+      transition: all .18s;
     }
+    .sidebar-footer .signin-btn:hover { background: rgba(78,168,255,.28); color: #fff; }
+
+    /* When logged in */
+    .sidebar-user { display: flex; align-items: center; gap: 10px; }
     .sidebar-user .avatar {
       width: 34px; height: 34px; border-radius: 50%; background: #4ea8ff;
       display: flex; align-items: center; justify-content: center;
@@ -67,7 +59,7 @@
     .sidebar-user .info { flex: 1; overflow: hidden; }
     .sidebar-user .info .uname { color: #fff; font-size: .82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .sidebar-user .info .urole { color: rgba(255,255,255,.45); font-size: .72rem; }
-    .sidebar-user .logout-btn { background: none; border: none; color: rgba(255,255,255,.5); font-size: .95rem; cursor: pointer; padding: 4px; transition: color .15s; }
+    .sidebar-user .logout-btn { background: none; border: none; color: rgba(255,255,255,.45); font-size: .95rem; cursor: pointer; padding: 4px; transition: color .15s; }
     .sidebar-user .logout-btn:hover { color: #ff6b6b; }
 
     /* Overlay backdrop */
@@ -98,8 +90,6 @@
     .s-confirmed  { background: #e6f4ea; color: #188038; }
     .s-completed  { background: #f3e8fd; color: #7b1fa2; }
     .s-cancelled  { background: #fce8e6; color: #c5221f; }
-
-    /* Review badges */
     .r-accepted          { background: #e6f4ea; color: #188038; }
     .r-changes_suggested { background: #fff3e0; color: #e65100; }
 
@@ -134,23 +124,22 @@
     .review-existing { padding: 12px 16px; border-radius: 10px; margin-bottom: 14px; }
     .review-existing.rv-accepted { background: #e6f4ea; border-left: 4px solid #188038; }
     .review-existing.rv-changes  { background: #fff3e0; border-left: 4px solid #e65100; }
+    .review-login-prompt { background: #f8f9fa; border: 1px dashed #dee2e6; border-radius: 10px; padding: 16px; text-align: center; color: #6c757d; font-size: .88rem; }
+    .review-login-prompt a { color: #0d6efd; cursor: pointer; }
 
     /* ════════════════════════════════════════════════════════
        Itinerary visual styles
     ════════════════════════════════════════════════════════ */
     .itinerary-wrap { background: #fff; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,.07); padding: 24px; }
-
     #itinerary-content .itin-sh {
       font-size: 1.02rem; font-weight: 700; color: #1a2236;
       margin: 1.8rem 0 .8rem; padding-bottom: .4rem;
       border-bottom: 2px solid #e9ecef; display: flex; align-items: center; gap: 7px;
     }
-
     .itin-day { border-radius: 12px; overflow: hidden; margin: 1.6rem 0; box-shadow: 0 3px 14px rgba(0,0,0,.09); }
     .itin-day-hdr { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff; padding: 14px 20px; }
     .itin-day-hdr h2 { margin: 0; font-size: 1rem; font-weight: 700; color: #fff; }
     .itin-day-body { background: #fff; padding: 18px 20px; border: 1px solid #e9ecef; border-top: none; border-radius: 0 0 12px 12px; }
-
     .itin-day-body h3 {
       font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .45px;
       padding: 6px 12px; border-radius: 6px; margin: 1.2rem 0 .6rem;
@@ -161,16 +150,13 @@
     .t-evening   { background: #f5f3ff; color: #6d28d9; border-left: 4px solid #8b5cf6; }
     .t-night     { background: #0f172a0d; color: #334155; border-left: 4px solid #64748b; }
     .t-other     { background: #f8f9fa; color: #374151; border-left: 4px solid #9ca3af; }
-
     .itin-weather {
       background: linear-gradient(90deg,#ecfdf5,#f0fdf4); border: 1px solid #bbf7d0;
       border-radius: 7px; padding: 8px 13px; margin: .4rem 0 .9rem;
       color: #166534; font-size: .87rem; font-weight: 500;
     }
-
     .itin-tip { background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 9px 9px 0; padding: 10px 15px; margin: .9rem 0; color: #78350f; }
     .itin-tip p { margin: 0; font-size: .88rem; }
-
     #itinerary-content > h1 { font-size: 1.45rem; font-weight: 800; color: #1a2236; margin-bottom: .9rem; padding-bottom: .5rem; border-bottom: 3px solid #e9ecef; }
     #itinerary-content li { margin-bottom: .3rem; line-height: 1.65; }
 
@@ -198,35 +184,24 @@
     ════════════════════════════════════════════════════════ */
     @media (max-width: 767px) {
       .mobile-bar { display: flex; }
-
       #sidebar { transform: translateX(-100%); top: 0; }
       #sidebar.open { transform: translateX(0); }
       .sidebar-backdrop.open { display: block; }
-
       #main { margin-left: 0; padding: calc(var(--mobile-bar) + 14px) 12px 20px; }
-
       .topbar { margin-bottom: 14px; }
       .topbar h1 { font-size: 1.1rem; }
       .topbar .d-flex.gap-2 { gap: 6px !important; }
       .topbar .btn { padding: .3rem .55rem; font-size: .8rem; }
       .topbar .btn span.btn-txt { display: none; }
-
       .trip-info-grid { grid-template-columns: 1fr !important; }
-
       .itin-day-hdr h2 { font-size: .92rem; }
       .itin-day-body { padding: 14px 14px; }
       .itinerary-wrap { padding: 16px; border-radius: 10px; }
-
       .table > :not(caption) > * > * { padding: .55rem .65rem; font-size: .83rem; }
-
       .tab-filter { gap: 3px; }
-
       .col-6 { padding-left: 6px; padding-right: 6px; }
       .row.g-3 { --bs-gutter-x: .75rem; --bs-gutter-y: .75rem; }
-
-      .login-card { margin: 16px; padding: 28px 22px; }
     }
-
     @media (max-width: 420px) {
       .back-btn span { display: none; }
       #btn-export-pdf .btn-txt-pdf { display: none; }
@@ -234,29 +209,6 @@
   </style>
 </head>
 <body>
-
-<!-- ── Login Screen ────────────────────────────────────────────────────────── -->
-<div id="login-screen">
-  <div class="login-card">
-    <div class="brand-logo">
-      <i class="fa-solid fa-plane-departure"></i>
-      <h2>Travel CRM</h2>
-      <p>Sign in to your agent account</p>
-    </div>
-    <div id="login-error" class="alert alert-danger login-error" style="display:none"></div>
-    <div class="mb-3">
-      <label class="form-label fw-semibold" style="font-size:.88rem">Username</label>
-      <input type="text" class="form-control" id="login-username" placeholder="Enter username" autocomplete="username" />
-    </div>
-    <div class="mb-4">
-      <label class="form-label fw-semibold" style="font-size:.88rem">Password</label>
-      <input type="password" class="form-control" id="login-password" placeholder="Enter password" autocomplete="current-password" />
-    </div>
-    <button class="btn btn-primary w-100" id="btn-login">
-      <i class="fa-solid fa-right-to-bracket me-2"></i>Sign In
-    </button>
-  </div>
-</div>
 
 <!-- Mobile top bar -->
 <div class="mobile-bar" id="mobile-bar">
@@ -276,13 +228,21 @@
     <a class="nav-link" href="#" data-view="trips"><i class="fa-solid fa-suitcase-rolling"></i>Trips</a>
     <a class="nav-link" href="#" data-view="agents" id="nav-agents" style="display:none"><i class="fa-solid fa-user-tie"></i>Agents</a>
   </nav>
-  <div class="sidebar-user">
-    <div class="avatar" id="sidebar-avatar">?</div>
-    <div class="info">
-      <div class="uname" id="sidebar-uname">—</div>
-      <div class="urole" id="sidebar-urole">—</div>
+  <!-- Footer: sign-in button OR user info -->
+  <div class="sidebar-footer">
+    <div id="sidebar-signin-wrap">
+      <button class="signin-btn" id="btn-open-login">
+        <i class="fa-solid fa-right-to-bracket"></i>Agent / Admin Sign In
+      </button>
     </div>
-    <button class="logout-btn" id="btn-logout" title="Sign out"><i class="fa-solid fa-right-from-bracket"></i></button>
+    <div class="sidebar-user" id="sidebar-user-wrap" style="display:none">
+      <div class="avatar" id="sidebar-avatar">?</div>
+      <div class="info">
+        <div class="uname" id="sidebar-uname">—</div>
+        <div class="urole" id="sidebar-urole">—</div>
+      </div>
+      <button class="logout-btn" id="btn-logout" title="Sign out"><i class="fa-solid fa-right-from-bracket"></i></button>
+    </div>
   </div>
 </div>
 
@@ -384,7 +344,6 @@
       <h2 id="print-trip-name"></h2>
       <p id="print-trip-meta"></p>
     </div>
-
     <div class="topbar">
       <div class="d-flex align-items-center gap-2">
         <span class="back-btn text-primary" id="btn-back"><i class="fa-solid fa-arrow-left me-1"></i><span>Trips</span></span>
@@ -400,7 +359,6 @@
         </button>
       </div>
     </div>
-
     <div class="row g-3 mb-4">
       <div class="col-12 col-md-6">
         <div class="table-card p-3 h-100">
@@ -415,7 +373,6 @@
         </div>
       </div>
     </div>
-
     <div class="itinerary-wrap">
       <div class="d-flex align-items-center justify-content-between mb-3">
         <h5 class="mb-0 fw-bold"><i class="fa-solid fa-map-location-dot me-2 text-primary"></i>Itinerary</h5>
@@ -432,11 +389,12 @@
       <div id="itinerary-content" style="display:none"></div>
     </div>
 
-    <!-- Review panel (shown when itinerary exists) -->
+    <!-- Review panel — shown below itinerary when one exists -->
     <div class="review-panel" id="review-panel" style="display:none">
       <h5><i class="fa-solid fa-clipboard-check me-2 text-primary"></i>Agent Review</h5>
       <div id="existing-review"></div>
-      <div id="review-form-wrap">
+      <!-- shown when logged in -->
+      <div id="review-form-wrap" style="display:none">
         <div class="mb-3">
           <label class="form-label fw-semibold" style="font-size:.88rem">Decision</label>
           <select class="form-select" id="review-status">
@@ -452,8 +410,12 @@
           <i class="fa-solid fa-paper-plane me-1"></i>Submit Review
         </button>
       </div>
+      <!-- shown when NOT logged in -->
+      <div id="review-login-prompt" class="review-login-prompt" style="display:none">
+        <i class="fa-solid fa-lock mb-2" style="font-size:1.2rem"></i><br>
+        <a onclick="document.getElementById('btn-open-login').click()">Sign in as an agent</a> to review this itinerary.
+      </div>
     </div>
-
   </div>
 
   <!-- ── Agents (admin only) ── -->
@@ -467,14 +429,12 @@
         <table class="table table-hover mb-0">
           <thead class="table-light">
             <tr>
-              <th>Name</th>
-              <th>Username</th>
+              <th>Name</th><th>Username</th>
               <th class="d-none d-md-table-cell">Email</th>
               <th class="d-none d-lg-table-cell">Specialty</th>
               <th class="d-none d-lg-table-cell">Languages</th>
               <th class="d-none d-sm-table-cell">Exp.</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th>Status</th><th>Actions</th>
             </tr>
           </thead>
           <tbody id="agents-tbody"></tbody>
@@ -485,6 +445,33 @@
 
 </div><!-- /main -->
 
+
+<!-- ── Login Modal ── -->
+<div class="modal fade" id="loginModal" tabindex="-1" data-bs-backdrop="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:380px">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-body p-4">
+        <div class="text-center mb-3">
+          <i class="fa-solid fa-plane-departure" style="font-size:1.8rem;color:#4ea8ff"></i>
+          <h5 class="fw-bold mt-2 mb-0">Agent Sign In</h5>
+          <p class="text-muted small mb-0">Access review & management features</p>
+        </div>
+        <div id="login-error" class="alert alert-danger py-2 small" style="display:none"></div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Username</label>
+          <input type="text" class="form-control" id="login-username" placeholder="Enter username" autocomplete="username" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Password</label>
+          <input type="password" class="form-control" id="login-password" placeholder="Enter password" autocomplete="current-password" />
+        </div>
+        <button class="btn btn-primary w-100" id="btn-login">
+          <i class="fa-solid fa-right-to-bracket me-2"></i>Sign In
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ── Customer Modal ── -->
 <div class="modal fade" id="customerModal" tabindex="-1">
@@ -651,15 +638,12 @@ let authToken = localStorage.getItem('crm_token') || null;
 let currentUser = JSON.parse(localStorage.getItem('crm_user') || 'null');
 
 function saveAuth(token, user) {
-  authToken = token;
-  currentUser = user;
+  authToken = token; currentUser = user;
   localStorage.setItem('crm_token', token);
   localStorage.setItem('crm_user', JSON.stringify(user));
 }
-
 function clearAuth() {
-  authToken = null;
-  currentUser = null;
+  authToken = null; currentUser = null;
   localStorage.removeItem('crm_token');
   localStorage.removeItem('crm_user');
 }
@@ -671,8 +655,9 @@ let allCustomers = [], allTrips = [], allAgents = [];
 let currentTripId = null, deleteCb = null;
 let statusFilter = 'all', streaming = false;
 
-const toastEl   = document.getElementById('toast');
-const bsToast   = new bootstrap.Toast(toastEl, { delay: 3200 });
+const toastEl    = document.getElementById('toast');
+const bsToast    = new bootstrap.Toast(toastEl, { delay: 3200 });
+const loginModal = new bootstrap.Modal('#loginModal');
 const custModal  = new bootstrap.Modal('#customerModal');
 const tripModal  = new bootstrap.Modal('#tripModal');
 const agentModal = new bootstrap.Modal('#agentModal');
@@ -685,14 +670,13 @@ function toast(msg, v = 'dark') {
 }
 
 // ─────────────────────────────────────────────
-// API
+// API helper — auth header injected if logged in
 // ─────────────────────────────────────────────
 async function api(method, path, body) {
   const opts = { method, headers: { 'Content-Type': 'application/json' } };
   if (authToken) opts.headers['Authorization'] = 'Bearer ' + authToken;
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch('/api' + path, opts);
-  if (res.status === 401) { doLogout(); return; }
   if (!res.ok) {
     const e = await res.json().catch(() => ({ detail: res.statusText }));
     throw new Error(e.detail || res.statusText);
@@ -702,16 +686,14 @@ async function api(method, path, body) {
 }
 
 // ─────────────────────────────────────────────
-// Login
+// Login modal
 // ─────────────────────────────────────────────
-const loginScreen = document.getElementById('login-screen');
-
-function showLogin() {
-  loginScreen.classList.remove('hidden');
-}
-function hideLogin() {
-  loginScreen.classList.add('hidden');
-}
+document.getElementById('btn-open-login').addEventListener('click', () => {
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('login-username').value = '';
+  document.getElementById('login-password').value = '';
+  loginModal.show();
+});
 
 document.getElementById('btn-login').addEventListener('click', doLogin);
 document.getElementById('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
@@ -721,23 +703,29 @@ async function doLogin() {
   const password = document.getElementById('login-password').value;
   const errEl = document.getElementById('login-error');
   errEl.style.display = 'none';
-  if (!username || !password) { errEl.textContent = 'Please enter username and password.'; errEl.style.display = ''; return; }
+  if (!username || !password) { errEl.textContent = 'Enter username and password.'; errEl.style.display = ''; return; }
   const btn = document.getElementById('btn-login');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing in…';
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing in…';
   try {
-    const data = await fetch('/api/auth/login', {
+    const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     });
-    if (!data.ok) {
-      const e = await data.json().catch(() => ({}));
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
       throw new Error(e.detail || 'Login failed');
     }
-    const json = await data.json();
-    saveAuth(json.token, json.user);
-    hideLogin();
-    initApp();
+    const data = await res.json();
+    saveAuth(data.token, data.user);
+    loginModal.hide();
+    applyAuthState();
+    toast('Welcome, ' + data.user.name + '!', 'success');
+    // If on trip detail with itinerary, refresh review panel
+    if (currentTripId && document.getElementById('view-trip-detail').classList.contains('active')) {
+      refreshTripReview();
+    }
   } catch(e) {
     errEl.textContent = e.message;
     errEl.style.display = '';
@@ -747,26 +735,29 @@ async function doLogin() {
   }
 }
 
-function doLogout() {
+document.getElementById('btn-logout').addEventListener('click', () => {
   clearAuth();
-  document.getElementById('login-username').value = '';
-  document.getElementById('login-password').value = '';
-  document.getElementById('login-error').style.display = 'none';
-  showLogin();
-}
+  applyAuthState();
+  toast('Signed out');
+  // Hide agents view if on it
+  if (document.getElementById('view-agents').classList.contains('active')) {
+    showView('dashboard'); loadDashboard();
+  }
+  // Refresh review panel if open
+  if (currentTripId && document.getElementById('view-trip-detail').classList.contains('active')) {
+    renderReviewPanel(currentTripReview);
+  }
+});
 
-document.getElementById('btn-logout').addEventListener('click', doLogout);
-
-// ─────────────────────────────────────────────
-// Sidebar user info
-// ─────────────────────────────────────────────
-function updateSidebarUser() {
-  if (!currentUser) return;
-  document.getElementById('sidebar-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
-  document.getElementById('sidebar-uname').textContent = currentUser.name;
-  document.getElementById('sidebar-urole').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Travel Agent';
-  if (currentUser.role === 'admin') {
-    document.getElementById('nav-agents').style.display = '';
+function applyAuthState() {
+  const loggedIn = !!currentUser;
+  document.getElementById('sidebar-signin-wrap').style.display = loggedIn ? 'none' : '';
+  document.getElementById('sidebar-user-wrap').style.display = loggedIn ? '' : 'none';
+  document.getElementById('nav-agents').style.display = (loggedIn && currentUser.role === 'admin') ? '' : 'none';
+  if (loggedIn) {
+    document.getElementById('sidebar-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
+    document.getElementById('sidebar-uname').textContent = currentUser.name;
+    document.getElementById('sidebar-urole').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Travel Agent';
   }
 }
 
@@ -797,8 +788,7 @@ document.querySelectorAll('#sidebar nav .nav-link').forEach(link => {
   link.addEventListener('click', e => {
     e.preventDefault();
     const v = link.dataset.view;
-    showView(v);
-    closeSidebar();
+    showView(v); closeSidebar();
     if (v === 'dashboard') loadDashboard();
     if (v === 'customers') loadCustomers();
     if (v === 'trips') loadTrips();
@@ -810,15 +800,8 @@ document.querySelectorAll('#sidebar nav .nav-link').forEach(link => {
 // Helpers
 // ─────────────────────────────────────────────
 const esc = s => s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-
-function badge(status) {
-  return `<span class="badge-s s-${status}">${status.charAt(0).toUpperCase()+status.slice(1)}</span>`;
-}
-
-function reviewBadge(status) {
-  const label = status === 'accepted' ? '✅ Accepted' : '📝 Changes Suggested';
-  return `<span class="badge-s r-${status}">${label}</span>`;
-}
+function badge(status) { return `<span class="badge-s s-${status}">${status.charAt(0).toUpperCase()+status.slice(1)}</span>`; }
+function reviewBadge(s) { return `<span class="badge-s r-${s}">${s==='accepted'?'✅ Accepted':'📝 Changes Suggested'}</span>`; }
 
 // ─────────────────────────────────────────────
 // Dashboard
@@ -828,7 +811,6 @@ async function loadDashboard() {
     new Date().toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
   try {
     const d = await api('GET', '/dashboard/stats');
-    if (!d) return;
     document.getElementById('stat-customers').textContent   = d.total_customers;
     document.getElementById('stat-trips').textContent       = d.total_trips;
     document.getElementById('stat-itineraries').textContent = d.total_itineraries;
@@ -849,10 +831,9 @@ async function loadDashboard() {
 // Customers
 // ─────────────────────────────────────────────
 async function loadCustomers() {
-  try { allCustomers = await api('GET','/customers') || []; renderCustomers(allCustomers); }
+  try { allCustomers = await api('GET','/customers'); renderCustomers(allCustomers); }
   catch(e) { toast('Failed to load customers: '+e.message,'danger'); }
 }
-
 function renderCustomers(list) {
   const tb = document.getElementById('customers-tbody');
   if (!list.length) { tb.innerHTML='<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-users-slash"></i><p>No customers</p></div></td></tr>'; return; }
@@ -869,23 +850,19 @@ function renderCustomers(list) {
       </td>
     </tr>`).join('');
 }
-
 document.getElementById('customer-search').addEventListener('input', e => {
   const q = e.target.value.toLowerCase();
   renderCustomers(allCustomers.filter(c => c.name.toLowerCase().includes(q)||c.email.toLowerCase().includes(q)));
 });
-
 document.getElementById('btn-add-customer').addEventListener('click', () => {
   document.getElementById('custModalTitle').textContent = 'Add Customer';
   document.getElementById('customerForm').reset();
   document.getElementById('cust-id').value = '';
   custModal.show();
 });
-
 async function editCustomer(id) {
   try {
     const c = await api('GET','/customers/'+id);
-    if (!c) return;
     document.getElementById('custModalTitle').textContent = 'Edit Customer';
     document.getElementById('cust-id').value = c.id;
     document.getElementById('cust-name').value = c.name;
@@ -896,7 +873,6 @@ async function editCustomer(id) {
     custModal.show();
   } catch(e) { toast('Error: '+e.message,'danger'); }
 }
-
 document.getElementById('btn-save-customer').addEventListener('click', async () => {
   const form = document.getElementById('customerForm');
   if (!form.checkValidity()) { form.reportValidity(); return; }
@@ -914,7 +890,6 @@ document.getElementById('btn-save-customer').addEventListener('click', async () 
     custModal.hide(); loadCustomers();
   } catch(e) { toast('Error: '+e.message,'danger'); }
 });
-
 function confirmDelCustomer(id, name) {
   document.getElementById('del-confirm-text').textContent = `Delete "${name}" and all their trips?`;
   deleteCb = async () => { try { await api('DELETE','/customers/'+id); toast('Deleted'); loadCustomers(); } catch(e) { toast(e.message,'danger'); } };
@@ -925,10 +900,9 @@ function confirmDelCustomer(id, name) {
 // Trips
 // ─────────────────────────────────────────────
 async function loadTrips() {
-  try { allTrips = await api('GET','/trips') || []; renderTrips(); }
+  try { allTrips = await api('GET','/trips'); renderTrips(); }
   catch(e) { toast('Failed to load trips: '+e.message,'danger'); }
 }
-
 function renderTrips() {
   const list = statusFilter==='all' ? allTrips : allTrips.filter(t=>t.status===statusFilter);
   const tb = document.getElementById('trips-tbody');
@@ -950,7 +924,6 @@ function renderTrips() {
       </td>
     </tr>`).join('');
 }
-
 document.querySelectorAll('#trips-tabs .nav-link').forEach(tab => {
   tab.addEventListener('click', e => {
     e.preventDefault();
@@ -960,7 +933,6 @@ document.querySelectorAll('#trips-tabs .nav-link').forEach(tab => {
     renderTrips();
   });
 });
-
 document.getElementById('btn-add-trip').addEventListener('click', async () => {
   await populateCustSelect();
   document.getElementById('tripModalTitle').textContent = 'Add Trip';
@@ -970,11 +942,9 @@ document.getElementById('btn-add-trip').addEventListener('click', async () => {
   document.getElementById('trip-budget-type').value = 'overall';
   tripModal.show();
 });
-
 async function editTrip(id) {
   try {
     const [t] = await Promise.all([api('GET','/trips/'+id), populateCustSelect()]);
-    if (!t) return;
     document.getElementById('tripModalTitle').textContent = 'Edit Trip';
     document.getElementById('trip-id').value = t.id;
     document.getElementById('trip-customer-id').value = t.customer_id;
@@ -990,12 +960,10 @@ async function editTrip(id) {
     tripModal.show();
   } catch(e) { toast('Error: '+e.message,'danger'); }
 }
-
 async function populateCustSelect() {
-  const custs = await api('GET','/customers') || [];
+  const custs = await api('GET','/customers');
   document.getElementById('trip-customer-id').innerHTML = custs.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
 }
-
 document.getElementById('btn-save-trip').addEventListener('click', async () => {
   const form = document.getElementById('tripForm');
   if (!form.checkValidity()) { form.reportValidity(); return; }
@@ -1018,7 +986,6 @@ document.getElementById('btn-save-trip').addEventListener('click', async () => {
     tripModal.hide(); loadTrips();
   } catch(e) { toast('Error: '+e.message,'danger'); }
 });
-
 function confirmDelTrip(id, dest) {
   document.getElementById('del-confirm-text').textContent = `Delete trip to "${dest}"?`;
   deleteCb = async () => { try { await api('DELETE','/trips/'+id); toast('Deleted'); loadTrips(); } catch(e) { toast(e.message,'danger'); } };
@@ -1028,35 +995,30 @@ function confirmDelTrip(id, dest) {
 // ─────────────────────────────────────────────
 // Trip Detail
 // ─────────────────────────────────────────────
+let currentTripReview = null;
+
 async function openTripDetail(id) {
   currentTripId = id;
+  currentTripReview = null;
   showView('trip-detail');
   document.querySelectorAll('#sidebar nav .nav-link').forEach(l=>l.classList.remove('active'));
   resetItinUI();
   document.getElementById('review-panel').style.display = 'none';
   try {
     const t = await api('GET','/trips/'+id);
-    if (!t) return;
     document.getElementById('trip-detail-title').textContent = t.destination;
     document.getElementById('print-trip-name').textContent = t.destination;
     document.getElementById('print-trip-meta').textContent =
       `${t.departure_city}, ${t.departure_country} · ${t.num_days} days`+
       (t.start_date?` · From ${t.start_date}`:'')+(t.budget?` · Budget: ${t.budget} ${t.budget_type==='per_person'?'p.p.':'total'}`:'');
-
     const budgetVal = t.budget
       ? `${esc(t.budget)} <span class="text-muted fw-normal" style="font-size:.78rem">${t.budget_type==='per_person'?'/ person':'total'}</span>`
       : '—';
-
     document.getElementById('trip-detail-info').innerHTML =
-      [['Destination',esc(t.destination)],
-       ['Departure',`${esc(t.departure_city)}, ${esc(t.departure_country)}`],
-       ['Duration',`${t.num_days} days`],
-       ['Start Date',t.start_date||'—'],
-       ['Status',badge(t.status)],
-       ['Budget',budgetVal]]
+      [['Destination',esc(t.destination)],['Departure',`${esc(t.departure_city)}, ${esc(t.departure_country)}`],
+       ['Duration',`${t.num_days} days`],['Start Date',t.start_date||'—'],['Status',badge(t.status)],['Budget',budgetVal]]
       .map(([l,v])=>`<div class="trip-info-item"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join('')
       +(t.notes?`<div class="trip-info-item" style="grid-column:1/-1"><div class="lbl">Notes</div><div class="val" style="font-weight:400;color:#495057">${esc(t.notes)}</div></div>`:'');
-
     document.getElementById('trip-customer-info').innerHTML = t.customer_name
       ? `<div class="d-flex align-items-center gap-3">
           <div style="width:44px;height:44px;border-radius:50%;background:#e8f0fe;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;color:#1a73e8;flex-shrink:0">
@@ -1065,12 +1027,20 @@ async function openTripDetail(id) {
           <div><div class="fw-bold">${esc(t.customer_name)}</div><div class="text-muted small">${esc(t.customer_email||'')}</div></div>
         </div>`
       : '<p class="text-muted mb-0">No customer data</p>';
-
     if (t.itinerary) {
       showItinerary(t.itinerary);
+      currentTripReview = t.review;
       renderReviewPanel(t.review);
     }
   } catch(e) { toast('Error loading trip: '+e.message,'danger'); }
+}
+
+async function refreshTripReview() {
+  try {
+    const t = await api('GET', '/trips/' + currentTripId);
+    currentTripReview = t.review;
+    renderReviewPanel(t.review);
+  } catch(_) {}
 }
 
 // ─────────────────────────────────────────────
@@ -1090,20 +1060,29 @@ function renderReviewPanel(review) {
         </div>
         ${review.comment ? `<p class="mb-0 mt-1" style="font-size:.88rem">${esc(review.comment)}</p>` : ''}
       </div>`;
-    document.getElementById('review-status').value = review.status;
-    document.getElementById('review-comment').value = review.comment || '';
   } else {
     existingEl.innerHTML = '';
+  }
+  // Show form or sign-in prompt based on auth state
+  const loggedIn = !!currentUser;
+  document.getElementById('review-form-wrap').style.display = loggedIn ? '' : 'none';
+  document.getElementById('review-login-prompt').style.display = loggedIn ? 'none' : '';
+  if (review && loggedIn) {
+    document.getElementById('review-status').value = review.status;
+    document.getElementById('review-comment').value = review.comment || '';
+  } else if (loggedIn) {
+    document.getElementById('review-status').value = 'accepted';
+    document.getElementById('review-comment').value = '';
   }
 }
 
 document.getElementById('btn-submit-review').addEventListener('click', async () => {
-  if (!currentTripId) return;
+  if (!currentTripId || !currentUser) return;
   const status = document.getElementById('review-status').value;
   const comment = document.getElementById('review-comment').value.trim() || null;
   try {
     const t = await api('POST', `/trips/${currentTripId}/review`, { status, comment });
-    if (!t) return;
+    currentTripReview = t.review;
     renderReviewPanel(t.review);
     toast('Review submitted', 'success');
   } catch(e) { toast('Error: '+e.message,'danger'); }
@@ -1126,17 +1105,15 @@ function applyItinStyles(el) {
       siblings.forEach(s => body.appendChild(s));
       card.appendChild(body);
       h2.parentNode.replaceChild(card, h2);
-    } else {
-      h2.classList.add('itin-sh');
-    }
+    } else { h2.classList.add('itin-sh'); }
   });
   el.querySelectorAll('.itin-day-body h3').forEach(h3 => {
     const t = h3.textContent.toLowerCase();
-    if      (t.includes('morning'))                                    h3.classList.add('t-morning');
+    if      (t.includes('morning'))                                         h3.classList.add('t-morning');
     else if (t.includes('afternoon')||t.includes('midday')||t.includes('lunch')) h3.classList.add('t-afternoon');
-    else if (t.includes('evening')||t.includes('dinner'))              h3.classList.add('t-evening');
-    else if (t.includes('night'))                                      h3.classList.add('t-night');
-    else                                                               h3.classList.add('t-other');
+    else if (t.includes('evening')||t.includes('dinner'))                   h3.classList.add('t-evening');
+    else if (t.includes('night'))                                           h3.classList.add('t-night');
+    else                                                                    h3.classList.add('t-other');
   });
   el.querySelectorAll('p').forEach(p => { if (/weather:/i.test(p.textContent)) p.classList.add('itin-weather'); });
   el.querySelectorAll('blockquote').forEach(bq => bq.classList.add('itin-tip'));
@@ -1146,8 +1123,7 @@ function showItinerary(markdown) {
   document.getElementById('itin-placeholder').style.display = 'none';
   document.getElementById('itin-thinking').style.display = 'none';
   const el = document.getElementById('itinerary-content');
-  el.style.display = '';
-  el.classList.remove('cursor');
+  el.style.display = ''; el.classList.remove('cursor');
   el.innerHTML = marked.parse(markdown);
   applyItinStyles(el);
   document.getElementById('itinerary-status-badge').innerHTML = '<span class="badge bg-success">Saved</span>';
@@ -1168,16 +1144,8 @@ function resetItinUI() {
 // ─────────────────────────────────────────────
 // Streaming
 // ─────────────────────────────────────────────
-document.getElementById('btn-generate').addEventListener('click', () => {
-  if (!currentTripId || streaming) return;
-  streamItinerary(currentTripId);
-});
-
-document.getElementById('btn-back').addEventListener('click', () => {
-  showView('trips');
-  document.querySelector('[data-view="trips"]').classList.add('active');
-  loadTrips();
-});
+document.getElementById('btn-generate').addEventListener('click', () => { if (!currentTripId || streaming) return; streamItinerary(currentTripId); });
+document.getElementById('btn-back').addEventListener('click', () => { showView('trips'); document.querySelector('[data-view="trips"]').classList.add('active'); loadTrips(); });
 document.getElementById('btn-edit-td').addEventListener('click', () => editTrip(currentTripId));
 document.getElementById('btn-export-pdf').addEventListener('click', () => window.print());
 
@@ -1188,43 +1156,30 @@ async function streamItinerary(tripId) {
   document.getElementById('review-panel').style.display = 'none';
   document.getElementById('itin-placeholder').style.display = 'none';
   document.getElementById('itinerary-status-badge').innerHTML = '<span class="badge bg-primary">Generating…</span>';
-
   const thinkEl = document.getElementById('itin-thinking');
   const contentEl = document.getElementById('itinerary-content');
   contentEl.style.display = 'none'; contentEl.innerHTML = '';
   thinkEl.style.display = 'flex';
   document.getElementById('thinking-msg').textContent = 'Starting…';
-
   let raw = '';
-
   try {
-    const resp = await fetch(`/api/trips/${tripId}/generate-itinerary`, {
-      headers: authToken ? { 'Authorization': 'Bearer ' + authToken } : {},
-    });
-    if (resp.status === 401) { doLogout(); return; }
+    const resp = await fetch(`/api/trips/${tripId}/generate-itinerary`);
     if (!resp.ok) throw new Error('HTTP '+resp.status);
     const reader = resp.body.getReader();
     const dec = new TextDecoder();
     let buf = '';
-
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
       buf += dec.decode(value, { stream: true });
-      const lines = buf.split('\n');
-      buf = lines.pop();
-
+      const lines = buf.split('\n'); buf = lines.pop();
       for (const line of lines) {
         if (!line.startsWith('data: ')) continue;
-        let ev;
-        try { ev = JSON.parse(line.slice(6)); } catch { continue; }
-
+        let ev; try { ev = JSON.parse(line.slice(6)); } catch { continue; }
         if (ev.type==='status'||ev.type==='thinking') {
           document.getElementById('thinking-msg').textContent = ev.message;
         } else if (ev.type==='text_start') {
-          thinkEl.style.display = 'none';
-          contentEl.style.display = '';
-          contentEl.classList.add('cursor');
+          thinkEl.style.display = 'none'; contentEl.style.display = ''; contentEl.classList.add('cursor');
         } else if (ev.type==='text') {
           raw += ev.content;
           if (raw.length % 300 < ev.content.length) contentEl.innerHTML = marked.parse(raw);
@@ -1237,15 +1192,14 @@ async function streamItinerary(tripId) {
           document.getElementById('btn-generate').disabled = false;
           document.getElementById('btn-export-pdf').style.display = '';
           streaming = false;
+          currentTripReview = null;
           renderReviewPanel(null);
           toast('Itinerary generated and saved!','success');
         } else if (ev.type==='error') {
-          thinkEl.style.display = 'none';
-          contentEl.style.display = '';
+          thinkEl.style.display = 'none'; contentEl.style.display = '';
           contentEl.innerHTML = `<div class="alert alert-danger mt-2"><i class="fa-solid fa-circle-exclamation me-2"></i>${esc(ev.message)}</div>`;
           document.getElementById('itinerary-status-badge').innerHTML = '<span class="badge bg-danger">Error</span>';
-          document.getElementById('btn-generate').disabled = false;
-          streaming = false;
+          document.getElementById('btn-generate').disabled = false; streaming = false;
         }
       }
     }
@@ -1254,8 +1208,7 @@ async function streamItinerary(tripId) {
     const el = document.getElementById('itinerary-content');
     el.style.display = ''; el.innerHTML = `<div class="alert alert-danger mt-2">${esc(e.message)}</div>`;
     document.getElementById('itinerary-status-badge').innerHTML = '<span class="badge bg-danger">Error</span>';
-    document.getElementById('btn-generate').disabled = false;
-    streaming = false;
+    document.getElementById('btn-generate').disabled = false; streaming = false;
     toast('Error: '+e.message,'danger');
   }
 }
@@ -1264,10 +1217,9 @@ async function streamItinerary(tripId) {
 // Agents (admin only)
 // ─────────────────────────────────────────────
 async function loadAgents() {
-  try { allAgents = await api('GET','/admin/agents') || []; renderAgents(); }
+  try { allAgents = await api('GET','/admin/agents'); renderAgents(); }
   catch(e) { toast('Failed to load agents: '+e.message,'danger'); }
 }
-
 function renderAgents() {
   const tb = document.getElementById('agents-tbody');
   if (!allAgents.length) { tb.innerHTML='<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-user-slash"></i><p>No agents</p></div></td></tr>'; return; }
@@ -1286,7 +1238,6 @@ function renderAgents() {
       </td>
     </tr>`).join('');
 }
-
 document.getElementById('btn-add-agent').addEventListener('click', () => {
   document.getElementById('agentModalTitle').textContent = 'Add Agent';
   document.getElementById('agentForm').reset();
@@ -1296,7 +1247,6 @@ document.getElementById('btn-add-agent').addEventListener('click', () => {
   document.getElementById('agent-password').required = true;
   agentModal.show();
 });
-
 async function editAgent(id) {
   const a = allAgents.find(x => x.id === id);
   if (!a) return;
@@ -1315,7 +1265,6 @@ async function editAgent(id) {
   document.getElementById('agent-languages').value = a.languages||'';
   agentModal.show();
 }
-
 document.getElementById('btn-save-agent').addEventListener('click', async () => {
   const form = document.getElementById('agentForm');
   if (!form.checkValidity()) { form.reportValidity(); return; }
@@ -1332,20 +1281,17 @@ document.getElementById('btn-save-agent').addEventListener('click', async () => 
   const pwd = document.getElementById('agent-password').value;
   if (pwd) p.password = pwd;
   try {
-    if (id) {
-      await api('PUT','/admin/agents/'+id, p);
-      toast('Agent updated');
-    } else {
+    if (id) { await api('PUT','/admin/agents/'+id,p); toast('Agent updated'); }
+    else {
       if (!pwd) { toast('Password is required','danger'); return; }
-      await api('POST','/admin/agents', {...p, password: pwd});
+      await api('POST','/admin/agents',{...p,password:pwd});
       toast('Agent created','success');
     }
     agentModal.hide(); loadAgents();
   } catch(e) { toast('Error: '+e.message,'danger'); }
 });
-
 function confirmDelAgent(id, name) {
-  document.getElementById('del-confirm-text').textContent = `Remove agent "${name}"? This cannot be undone.`;
+  document.getElementById('del-confirm-text').textContent = `Remove agent "${name}"?`;
   deleteCb = async () => { try { await api('DELETE','/admin/agents/'+id); toast('Agent removed'); loadAgents(); } catch(e) { toast(e.message,'danger'); } };
   delModal.show();
 }
@@ -1354,26 +1300,14 @@ function confirmDelAgent(id, name) {
 // Delete confirm
 // ─────────────────────────────────────────────
 document.getElementById('btn-confirm-del').addEventListener('click', async () => {
-  delModal.hide();
-  if (deleteCb) await deleteCb();
-  deleteCb = null;
+  delModal.hide(); if (deleteCb) await deleteCb(); deleteCb = null;
 });
 
 // ─────────────────────────────────────────────
 // Init
 // ─────────────────────────────────────────────
-function initApp() {
-  updateSidebarUser();
-  showView('customers');
-  loadCustomers();
-}
-
-if (authToken && currentUser) {
-  hideLogin();
-  initApp();
-} else {
-  showLogin();
-}
+applyAuthState();  // set sidebar to logged-in or sign-in state
+loadDashboard();   // load dashboard immediately — no auth required
 </script>
 </body>
 </html>

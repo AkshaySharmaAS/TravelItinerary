@@ -143,6 +143,11 @@ class TripUpdate(BaseModel):
     notes: Optional[str] = None
 
 
+# ── Auth import ───────────────────────────────────────────────────────────────
+
+from auth import create_token, hash_password, verify_password, require_agent, require_admin
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _user_dict(u: User) -> dict:
@@ -215,7 +220,6 @@ def _stream_itinerary(trip_data: dict, api_key: str):
     client = anthropic.Anthropic(api_key=api_key)
     full_content = ""
 
-    # ── Step 1: fetch real flight data ───────────────────────────────────────
     flight_block = ""
     if trip_data.get("start_date"):
         yield f"data: {json.dumps({'type': 'status', 'message': '✈️ Fetching live flights from Google Flights...'})}\n\n"
@@ -234,7 +238,6 @@ def _stream_itinerary(trip_data: dict, api_key: str):
     else:
         yield f"data: {json.dumps({'type': 'status', 'message': 'Connecting to Claude AI...'})}\n\n"
 
-    # ── Step 2: build prompt ──────────────────────────────────────────────────
     start_date_line = (
         f"**Travel Dates:** Starting {trip_data['start_date']}\n"
         if trip_data.get("start_date") else ""
@@ -249,7 +252,6 @@ def _stream_itinerary(trip_data: dict, api_key: str):
         if trip_data.get("notes") else ""
     )
     flight_section = f"\n\n{flight_block}\n\n" if flight_block else ""
-
     no_date_note = (
         "\nNote: No start date provided — use typical seasonal weather patterns.\n"
         if not trip_data.get("start_date") else ""
@@ -294,21 +296,15 @@ def _stream_itinerary(trip_data: dict, api_key: str):
                         yield f"data: {json.dumps({'type': 'thinking', 'message': 'Planning your perfect itinerary...'})}\n\n"
                     elif event.content_block.type == "text":
                         yield f"data: {json.dumps({'type': 'text_start'})}\n\n"
-
                 elif event.type == "content_block_delta":
                     if event.delta.type == "text_delta":
                         text = event.delta.text
                         full_content += text
                         yield f"data: {json.dumps({'type': 'text', 'content': text})}\n\n"
 
-        # Persist the itinerary
         db = SessionLocal()
         try:
-            existing = (
-                db.query(Itinerary)
-                .filter(Itinerary.trip_id == trip_data["id"])
-                .first()
-            )
+            existing = db.query(Itinerary).filter(Itinerary.trip_id == trip_data["id"]).first()
             if existing:
                 existing.content = full_content
                 existing.generated_at = datetime.utcnow()
@@ -317,9 +313,7 @@ def _stream_itinerary(trip_data: dict, api_key: str):
             db.commit()
             yield f"data: {json.dumps({'type': 'done', 'message': 'Itinerary generated and saved!'})}\n\n"
         except Exception as db_err:
-            yield (
-                f"data: {json.dumps({'type': 'done', 'message': f'Generated but could not save: {db_err}'})}\n\n"
-            )
+            yield f"data: {json.dumps({'type': 'done', 'message': f'Generated but could not save: {db_err}'})}\n\n"
         finally:
             db.close()
 
@@ -330,8 +324,6 @@ def _stream_itinerary(trip_data: dict, api_key: str):
 
 
 # ── Auth routes ───────────────────────────────────────────────────────────────
-
-from auth import create_token, hash_password, verify_password, require_agent, require_admin
 
 @app.post("/api/auth/login")
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
@@ -347,7 +339,7 @@ def get_me(current_user: User = Depends(require_agent)):
     return _user_dict(current_user)
 
 
-# ── Admin — agent management ──────────────────────────────────────────────────
+# ── Admin — agent management (requires admin login) ───────────────────────────
 
 @app.get("/api/admin/agents")
 def list_agents(db: Session = Depends(get_db), _: User = Depends(require_admin)):
@@ -401,16 +393,16 @@ def delete_agent(agent_id: int, db: Session = Depends(get_db), _: User = Depends
     db.commit()
 
 
-# ── Customer routes ───────────────────────────────────────────────────────────
+# ── Customer routes (no auth required) ───────────────────────────────────────
 
 @app.get("/api/customers")
-def list_customers(db: Session = Depends(get_db), _: User = Depends(require_agent)):
+def list_customers(db: Session = Depends(get_db)):
     customers = db.query(Customer).order_by(Customer.created_at.desc()).all()
     return [_customer_dict(c) for c in customers]
 
 
 @app.post("/api/customers", status_code=201)
-def create_customer(payload: CustomerCreate, db: Session = Depends(get_db), _: User = Depends(require_agent)):
+def create_customer(payload: CustomerCreate, db: Session = Depends(get_db)):
     if db.query(Customer).filter(Customer.email == payload.email).first():
         raise HTTPException(status_code=409, detail="Email already registered")
     customer = Customer(**payload.model_dump())
@@ -421,7 +413,7 @@ def create_customer(payload: CustomerCreate, db: Session = Depends(get_db), _: U
 
 
 @app.get("/api/customers/{customer_id}")
-def get_customer(customer_id: int, db: Session = Depends(get_db), _: User = Depends(require_agent)):
+def get_customer(customer_id: int, db: Session = Depends(get_db)):
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
@@ -431,9 +423,7 @@ def get_customer(customer_id: int, db: Session = Depends(get_db), _: User = Depe
 
 
 @app.put("/api/customers/{customer_id}")
-def update_customer(
-    customer_id: int, payload: CustomerUpdate, db: Session = Depends(get_db), _: User = Depends(require_agent)
-):
+def update_customer(customer_id: int, payload: CustomerUpdate, db: Session = Depends(get_db)):
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
@@ -445,7 +435,7 @@ def update_customer(
 
 
 @app.delete("/api/customers/{customer_id}", status_code=204)
-def delete_customer(customer_id: int, db: Session = Depends(get_db), _: User = Depends(require_agent)):
+def delete_customer(customer_id: int, db: Session = Depends(get_db)):
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
@@ -453,16 +443,16 @@ def delete_customer(customer_id: int, db: Session = Depends(get_db), _: User = D
     db.commit()
 
 
-# ── Trip routes ───────────────────────────────────────────────────────────────
+# ── Trip routes (no auth required) ───────────────────────────────────────────
 
 @app.get("/api/trips")
-def list_trips(db: Session = Depends(get_db), _: User = Depends(require_agent)):
+def list_trips(db: Session = Depends(get_db)):
     trips = db.query(Trip).order_by(Trip.created_at.desc()).all()
     return [_trip_dict(t) for t in trips]
 
 
 @app.post("/api/trips", status_code=201)
-def create_trip(payload: TripCreate, db: Session = Depends(get_db), _: User = Depends(require_agent)):
+def create_trip(payload: TripCreate, db: Session = Depends(get_db)):
     if not db.query(Customer).filter(Customer.id == payload.customer_id).first():
         raise HTTPException(status_code=404, detail="Customer not found")
     trip = Trip(**payload.model_dump())
@@ -473,7 +463,7 @@ def create_trip(payload: TripCreate, db: Session = Depends(get_db), _: User = De
 
 
 @app.get("/api/trips/{trip_id}")
-def get_trip(trip_id: int, db: Session = Depends(get_db), _: User = Depends(require_agent)):
+def get_trip(trip_id: int, db: Session = Depends(get_db)):
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
@@ -483,7 +473,7 @@ def get_trip(trip_id: int, db: Session = Depends(get_db), _: User = Depends(requ
 
 
 @app.put("/api/trips/{trip_id}")
-def update_trip(trip_id: int, payload: TripUpdate, db: Session = Depends(get_db), _: User = Depends(require_agent)):
+def update_trip(trip_id: int, payload: TripUpdate, db: Session = Depends(get_db)):
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
@@ -495,7 +485,7 @@ def update_trip(trip_id: int, payload: TripUpdate, db: Session = Depends(get_db)
 
 
 @app.delete("/api/trips/{trip_id}", status_code=204)
-def delete_trip(trip_id: int, db: Session = Depends(get_db), _: User = Depends(require_agent)):
+def delete_trip(trip_id: int, db: Session = Depends(get_db)):
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
@@ -503,7 +493,7 @@ def delete_trip(trip_id: int, db: Session = Depends(get_db), _: User = Depends(r
     db.commit()
 
 
-# ── Itinerary review ──────────────────────────────────────────────────────────
+# ── Itinerary review (requires agent login) ───────────────────────────────────
 
 @app.post("/api/trips/{trip_id}/review")
 def submit_review(
@@ -537,19 +527,17 @@ def submit_review(
     return _trip_dict(db.query(Trip).filter(Trip.id == trip_id).first())
 
 
-# ── Itinerary generation ──────────────────────────────────────────────────────
+# ── Itinerary generation (no auth required) ───────────────────────────────────
 
 @app.get("/api/trips/{trip_id}/generate-itinerary")
-def generate_itinerary(trip_id: int, db: Session = Depends(get_db), _: User = Depends(require_agent)):
+def generate_itinerary(trip_id: int, db: Session = Depends(get_db)):
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
 
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
-        raise HTTPException(
-            status_code=500, detail="ANTHROPIC_API_KEY environment variable not set"
-        )
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY environment variable not set")
 
     trip_data = {
         "id": trip.id,
@@ -574,14 +562,12 @@ def generate_itinerary(trip_id: int, db: Session = Depends(get_db), _: User = De
     )
 
 
-# ── Dashboard ─────────────────────────────────────────────────────────────────
+# ── Dashboard (no auth required) ─────────────────────────────────────────────
 
 @app.get("/api/dashboard/stats")
-def dashboard_stats(db: Session = Depends(get_db), _: User = Depends(require_agent)):
+def dashboard_stats(db: Session = Depends(get_db)):
     statuses = ["planning", "confirmed", "completed", "cancelled"]
-    status_counts = {
-        s: db.query(Trip).filter(Trip.status == s).count() for s in statuses
-    }
+    status_counts = {s: db.query(Trip).filter(Trip.status == s).count() for s in statuses}
     recent_trips = db.query(Trip).order_by(Trip.created_at.desc()).limit(6).all()
     return {
         "total_customers": db.query(Customer).count(),
@@ -604,5 +590,4 @@ async def index():
 
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
