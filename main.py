@@ -11,11 +11,12 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from database import Customer, Itinerary, SessionLocal, Trip, create_tables, get_db, migrate_db
+from database import Customer, Itinerary, ItineraryReview, SessionLocal, Trip, User, create_tables, get_db, migrate_db, seed_admin
 
 load_dotenv()
 create_tables()
 migrate_db()
+seed_admin()
 
 app = FastAPI(title="Travel Agent CRM")
 
@@ -69,6 +70,38 @@ Guidelines:
 
 # ── Pydantic schemas ──────────────────────────────────────────────────────────
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class AgentCreate(BaseModel):
+    username: str
+    password: str
+    name: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    specialty: Optional[str] = None
+    languages: Optional[str] = None
+    experience_years: Optional[int] = 0
+
+
+class AgentUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    specialty: Optional[str] = None
+    languages: Optional[str] = None
+    experience_years: Optional[int] = None
+    is_active: Optional[bool] = None
+    password: Optional[str] = None
+
+
+class ReviewCreate(BaseModel):
+    status: str  # accepted | changes_suggested
+    comment: Optional[str] = None
+
+
 class CustomerCreate(BaseModel):
     name: str
     email: str
@@ -112,6 +145,22 @@ class TripUpdate(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+def _user_dict(u: User) -> dict:
+    return {
+        "id": u.id,
+        "username": u.username,
+        "role": u.role,
+        "name": u.name,
+        "email": u.email,
+        "phone": u.phone,
+        "specialty": u.specialty,
+        "languages": u.languages,
+        "experience_years": u.experience_years,
+        "is_active": u.is_active,
+        "created_at": u.created_at.isoformat(),
+    }
+
+
 def _customer_dict(c: Customer) -> dict:
     return {
         "id": c.id,
@@ -144,6 +193,16 @@ def _trip_dict(t: Trip, include_customer: bool = True) -> dict:
     if include_customer and t.customer:
         d["customer_name"] = t.customer.name
         d["customer_email"] = t.customer.email
+    if t.review:
+        d["review"] = {
+            "status": t.review.status,
+            "comment": t.review.comment,
+            "agent_id": t.review.agent_id,
+            "agent_name": t.review.agent.name if t.review.agent else None,
+            "reviewed_at": t.review.reviewed_at.isoformat(),
+        }
+    else:
+        d["review"] = None
     return d
 
 
@@ -270,16 +329,88 @@ def _stream_itinerary(trip_data: dict, api_key: str):
         yield f"data: {json.dumps({'type': 'error', 'message': str(exc)})}\n\n"
 
 
+# ── Auth routes ───────────────────────────────────────────────────────────────
+
+from auth import create_token, hash_password, verify_password, require_agent, require_admin
+
+@app.post("/api/auth/login")
+def login(payload: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == payload.username, User.is_active == True).first()
+    if not user or not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    token = create_token(user.id, user.username, user.role, user.name)
+    return {"token": token, "user": _user_dict(user)}
+
+
+@app.get("/api/auth/me")
+def get_me(current_user: User = Depends(require_agent)):
+    return _user_dict(current_user)
+
+
+# ── Admin — agent management ──────────────────────────────────────────────────
+
+@app.get("/api/admin/agents")
+def list_agents(db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    agents = db.query(User).order_by(User.created_at.desc()).all()
+    return [_user_dict(a) for a in agents]
+
+
+@app.post("/api/admin/agents", status_code=201)
+def create_agent(payload: AgentCreate, db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    if db.query(User).filter(User.username == payload.username).first():
+        raise HTTPException(status_code=409, detail="Username already taken")
+    agent = User(
+        username=payload.username,
+        password_hash=hash_password(payload.password),
+        role="travel_agent",
+        name=payload.name,
+        email=payload.email,
+        phone=payload.phone,
+        specialty=payload.specialty,
+        languages=payload.languages,
+        experience_years=payload.experience_years or 0,
+    )
+    db.add(agent)
+    db.commit()
+    db.refresh(agent)
+    return _user_dict(agent)
+
+
+@app.put("/api/admin/agents/{agent_id}")
+def update_agent(agent_id: int, payload: AgentUpdate, db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    agent = db.query(User).filter(User.id == agent_id).first()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    data = payload.model_dump(exclude_none=True)
+    if "password" in data:
+        agent.password_hash = hash_password(data.pop("password"))
+    for key, value in data.items():
+        setattr(agent, key, value)
+    db.commit()
+    return _user_dict(agent)
+
+
+@app.delete("/api/admin/agents/{agent_id}", status_code=204)
+def delete_agent(agent_id: int, db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    agent = db.query(User).filter(User.id == agent_id).first()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    if agent.role == "admin" and agent.username == "admin":
+        raise HTTPException(status_code=400, detail="Cannot delete the primary admin account")
+    db.delete(agent)
+    db.commit()
+
+
 # ── Customer routes ───────────────────────────────────────────────────────────
 
 @app.get("/api/customers")
-def list_customers(db: Session = Depends(get_db)):
+def list_customers(db: Session = Depends(get_db), _: User = Depends(require_agent)):
     customers = db.query(Customer).order_by(Customer.created_at.desc()).all()
     return [_customer_dict(c) for c in customers]
 
 
 @app.post("/api/customers", status_code=201)
-def create_customer(payload: CustomerCreate, db: Session = Depends(get_db)):
+def create_customer(payload: CustomerCreate, db: Session = Depends(get_db), _: User = Depends(require_agent)):
     if db.query(Customer).filter(Customer.email == payload.email).first():
         raise HTTPException(status_code=409, detail="Email already registered")
     customer = Customer(**payload.model_dump())
@@ -290,7 +421,7 @@ def create_customer(payload: CustomerCreate, db: Session = Depends(get_db)):
 
 
 @app.get("/api/customers/{customer_id}")
-def get_customer(customer_id: int, db: Session = Depends(get_db)):
+def get_customer(customer_id: int, db: Session = Depends(get_db), _: User = Depends(require_agent)):
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
@@ -301,7 +432,7 @@ def get_customer(customer_id: int, db: Session = Depends(get_db)):
 
 @app.put("/api/customers/{customer_id}")
 def update_customer(
-    customer_id: int, payload: CustomerUpdate, db: Session = Depends(get_db)
+    customer_id: int, payload: CustomerUpdate, db: Session = Depends(get_db), _: User = Depends(require_agent)
 ):
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if not customer:
@@ -314,7 +445,7 @@ def update_customer(
 
 
 @app.delete("/api/customers/{customer_id}", status_code=204)
-def delete_customer(customer_id: int, db: Session = Depends(get_db)):
+def delete_customer(customer_id: int, db: Session = Depends(get_db), _: User = Depends(require_agent)):
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
@@ -325,13 +456,13 @@ def delete_customer(customer_id: int, db: Session = Depends(get_db)):
 # ── Trip routes ───────────────────────────────────────────────────────────────
 
 @app.get("/api/trips")
-def list_trips(db: Session = Depends(get_db)):
+def list_trips(db: Session = Depends(get_db), _: User = Depends(require_agent)):
     trips = db.query(Trip).order_by(Trip.created_at.desc()).all()
     return [_trip_dict(t) for t in trips]
 
 
 @app.post("/api/trips", status_code=201)
-def create_trip(payload: TripCreate, db: Session = Depends(get_db)):
+def create_trip(payload: TripCreate, db: Session = Depends(get_db), _: User = Depends(require_agent)):
     if not db.query(Customer).filter(Customer.id == payload.customer_id).first():
         raise HTTPException(status_code=404, detail="Customer not found")
     trip = Trip(**payload.model_dump())
@@ -342,7 +473,7 @@ def create_trip(payload: TripCreate, db: Session = Depends(get_db)):
 
 
 @app.get("/api/trips/{trip_id}")
-def get_trip(trip_id: int, db: Session = Depends(get_db)):
+def get_trip(trip_id: int, db: Session = Depends(get_db), _: User = Depends(require_agent)):
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
@@ -352,7 +483,7 @@ def get_trip(trip_id: int, db: Session = Depends(get_db)):
 
 
 @app.put("/api/trips/{trip_id}")
-def update_trip(trip_id: int, payload: TripUpdate, db: Session = Depends(get_db)):
+def update_trip(trip_id: int, payload: TripUpdate, db: Session = Depends(get_db), _: User = Depends(require_agent)):
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
@@ -364,7 +495,7 @@ def update_trip(trip_id: int, payload: TripUpdate, db: Session = Depends(get_db)
 
 
 @app.delete("/api/trips/{trip_id}", status_code=204)
-def delete_trip(trip_id: int, db: Session = Depends(get_db)):
+def delete_trip(trip_id: int, db: Session = Depends(get_db), _: User = Depends(require_agent)):
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
@@ -372,10 +503,44 @@ def delete_trip(trip_id: int, db: Session = Depends(get_db)):
     db.commit()
 
 
+# ── Itinerary review ──────────────────────────────────────────────────────────
+
+@app.post("/api/trips/{trip_id}/review")
+def submit_review(
+    trip_id: int,
+    payload: ReviewCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_agent),
+):
+    trip = db.query(Trip).filter(Trip.id == trip_id).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    if not trip.itinerary:
+        raise HTTPException(status_code=400, detail="No itinerary generated yet")
+    if payload.status not in ("accepted", "changes_suggested"):
+        raise HTTPException(status_code=400, detail="status must be 'accepted' or 'changes_suggested'")
+
+    existing = db.query(ItineraryReview).filter(ItineraryReview.trip_id == trip_id).first()
+    if existing:
+        existing.status = payload.status
+        existing.comment = payload.comment
+        existing.agent_id = current_user.id
+        existing.reviewed_at = datetime.utcnow()
+    else:
+        db.add(ItineraryReview(
+            trip_id=trip_id,
+            agent_id=current_user.id,
+            status=payload.status,
+            comment=payload.comment,
+        ))
+    db.commit()
+    return _trip_dict(db.query(Trip).filter(Trip.id == trip_id).first())
+
+
 # ── Itinerary generation ──────────────────────────────────────────────────────
 
 @app.get("/api/trips/{trip_id}/generate-itinerary")
-def generate_itinerary(trip_id: int, db: Session = Depends(get_db)):
+def generate_itinerary(trip_id: int, db: Session = Depends(get_db), _: User = Depends(require_agent)):
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
@@ -412,7 +577,7 @@ def generate_itinerary(trip_id: int, db: Session = Depends(get_db)):
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
 @app.get("/api/dashboard/stats")
-def dashboard_stats(db: Session = Depends(get_db)):
+def dashboard_stats(db: Session = Depends(get_db), _: User = Depends(require_agent)):
     statuses = ["planning", "confirmed", "completed", "cancelled"]
     status_counts = {
         s: db.query(Trip).filter(Trip.status == s).count() for s in statuses

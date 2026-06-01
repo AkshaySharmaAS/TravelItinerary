@@ -11,6 +11,23 @@
     *, *::before, *::after { box-sizing: border-box; }
     body { min-height: 100vh; background: #f4f6fb; font-family: 'Segoe UI', system-ui, sans-serif; }
 
+    /* ── Login overlay ────────────────────────────────────────────────────── */
+    #login-screen {
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(135deg, #1a2236 0%, #243155 60%, #1e3c72 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #login-screen.hidden { display: none; }
+    .login-card {
+      background: #fff; border-radius: 18px; padding: 40px 36px;
+      width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,.4);
+    }
+    .login-card .brand-logo { text-align: center; margin-bottom: 24px; }
+    .login-card .brand-logo i { font-size: 2.4rem; color: #4ea8ff; }
+    .login-card .brand-logo h2 { font-size: 1.3rem; font-weight: 800; color: #1a2236; margin: 8px 0 2px; }
+    .login-card .brand-logo p { color: #6c757d; font-size: .85rem; margin: 0; }
+    .login-error { font-size: .84rem; }
+
     /* ── Mobile top bar ───────────────────────────────────────────────────── */
     .mobile-bar {
       display: none;
@@ -36,6 +53,22 @@
     #sidebar nav .nav-link { color: rgba(255,255,255,.6); padding: 10px 20px; font-size: .9rem; display: flex; align-items: center; gap: 10px; border-left: 3px solid transparent; transition: all .18s; }
     #sidebar nav .nav-link:hover, #sidebar nav .nav-link.active { color: #fff; background: rgba(255,255,255,.08); border-left-color: #4ea8ff; }
     #sidebar nav .nav-link i { width: 18px; text-align: center; }
+
+    /* Sidebar user footer */
+    .sidebar-user {
+      padding: 14px 18px; border-top: 1px solid rgba(255,255,255,.1);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .sidebar-user .avatar {
+      width: 34px; height: 34px; border-radius: 50%; background: #4ea8ff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; color: #fff; font-size: .9rem; flex-shrink: 0;
+    }
+    .sidebar-user .info { flex: 1; overflow: hidden; }
+    .sidebar-user .info .uname { color: #fff; font-size: .82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar-user .info .urole { color: rgba(255,255,255,.45); font-size: .72rem; }
+    .sidebar-user .logout-btn { background: none; border: none; color: rgba(255,255,255,.5); font-size: .95rem; cursor: pointer; padding: 4px; transition: color .15s; }
+    .sidebar-user .logout-btn:hover { color: #ff6b6b; }
 
     /* Overlay backdrop */
     .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 99; }
@@ -66,6 +99,10 @@
     .s-completed  { background: #f3e8fd; color: #7b1fa2; }
     .s-cancelled  { background: #fce8e6; color: #c5221f; }
 
+    /* Review badges */
+    .r-accepted          { background: #e6f4ea; color: #188038; }
+    .r-changes_suggested { background: #fff3e0; color: #e65100; }
+
     /* ── Trip detail ──────────────────────────────────────────────────────── */
     .trip-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; }
     .trip-info-item .lbl { font-size: .73rem; color: #9ca3af; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 2px; }
@@ -91,25 +128,29 @@
     .empty-state { text-align: center; padding: 50px 20px; color: #adb5bd; }
     .empty-state i { font-size: 2.6rem; margin-bottom: 14px; display: block; }
 
+    /* ── Review panel ─────────────────────────────────────────────────────── */
+    .review-panel { background: #fff; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,.07); padding: 20px 24px; margin-top: 20px; }
+    .review-panel h5 { font-size: .95rem; font-weight: 700; margin-bottom: 14px; }
+    .review-existing { padding: 12px 16px; border-radius: 10px; margin-bottom: 14px; }
+    .review-existing.rv-accepted { background: #e6f4ea; border-left: 4px solid #188038; }
+    .review-existing.rv-changes  { background: #fff3e0; border-left: 4px solid #e65100; }
+
     /* ════════════════════════════════════════════════════════
        Itinerary visual styles
     ════════════════════════════════════════════════════════ */
     .itinerary-wrap { background: #fff; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,.07); padding: 24px; }
 
-    /* Non-day section headings */
     #itinerary-content .itin-sh {
       font-size: 1.02rem; font-weight: 700; color: #1a2236;
       margin: 1.8rem 0 .8rem; padding-bottom: .4rem;
       border-bottom: 2px solid #e9ecef; display: flex; align-items: center; gap: 7px;
     }
 
-    /* Day cards */
     .itin-day { border-radius: 12px; overflow: hidden; margin: 1.6rem 0; box-shadow: 0 3px 14px rgba(0,0,0,.09); }
     .itin-day-hdr { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff; padding: 14px 20px; }
     .itin-day-hdr h2 { margin: 0; font-size: 1rem; font-weight: 700; color: #fff; }
     .itin-day-body { background: #fff; padding: 18px 20px; border: 1px solid #e9ecef; border-top: none; border-radius: 0 0 12px 12px; }
 
-    /* Time-of-day h3 */
     .itin-day-body h3 {
       font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .45px;
       padding: 6px 12px; border-radius: 6px; margin: 1.2rem 0 .6rem;
@@ -121,18 +162,15 @@
     .t-night     { background: #0f172a0d; color: #334155; border-left: 4px solid #64748b; }
     .t-other     { background: #f8f9fa; color: #374151; border-left: 4px solid #9ca3af; }
 
-    /* Weather line */
     .itin-weather {
       background: linear-gradient(90deg,#ecfdf5,#f0fdf4); border: 1px solid #bbf7d0;
       border-radius: 7px; padding: 8px 13px; margin: .4rem 0 .9rem;
       color: #166534; font-size: .87rem; font-weight: 500;
     }
 
-    /* Tip callouts */
     .itin-tip { background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 9px 9px 0; padding: 10px 15px; margin: .9rem 0; color: #78350f; }
     .itin-tip p { margin: 0; font-size: .88rem; }
 
-    /* Trip title */
     #itinerary-content > h1 { font-size: 1.45rem; font-weight: 800; color: #1a2236; margin-bottom: .9rem; padding-bottom: .5rem; border-bottom: 3px solid #e9ecef; }
     #itinerary-content li { margin-bottom: .3rem; line-height: 1.65; }
 
@@ -142,7 +180,7 @@
     @media print {
       #sidebar, .mobile-bar, .sidebar-backdrop,
       #btn-generate, #btn-export-pdf, #btn-edit-td,
-      .topbar .d-flex, #itinerary-status-badge { display: none !important; }
+      .topbar .d-flex, #itinerary-status-badge, .review-panel { display: none !important; }
       body { background: #fff !important; }
       #main { margin-left: 0 !important; padding: 12px !important; }
       .view { display: none !important; }
@@ -171,7 +209,7 @@
       .topbar h1 { font-size: 1.1rem; }
       .topbar .d-flex.gap-2 { gap: 6px !important; }
       .topbar .btn { padding: .3rem .55rem; font-size: .8rem; }
-      .topbar .btn span.btn-txt { display: none; }   /* hide label, keep icon on mobile */
+      .topbar .btn span.btn-txt { display: none; }
 
       .trip-info-grid { grid-template-columns: 1fr !important; }
 
@@ -185,15 +223,40 @@
 
       .col-6 { padding-left: 6px; padding-right: 6px; }
       .row.g-3 { --bs-gutter-x: .75rem; --bs-gutter-y: .75rem; }
+
+      .login-card { margin: 16px; padding: 28px 22px; }
     }
 
     @media (max-width: 420px) {
-      .back-btn span { display: none; }  /* icon only */
+      .back-btn span { display: none; }
       #btn-export-pdf .btn-txt-pdf { display: none; }
     }
   </style>
 </head>
 <body>
+
+<!-- ── Login Screen ────────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="brand-logo">
+      <i class="fa-solid fa-plane-departure"></i>
+      <h2>Travel CRM</h2>
+      <p>Sign in to your agent account</p>
+    </div>
+    <div id="login-error" class="alert alert-danger login-error" style="display:none"></div>
+    <div class="mb-3">
+      <label class="form-label fw-semibold" style="font-size:.88rem">Username</label>
+      <input type="text" class="form-control" id="login-username" placeholder="Enter username" autocomplete="username" />
+    </div>
+    <div class="mb-4">
+      <label class="form-label fw-semibold" style="font-size:.88rem">Password</label>
+      <input type="password" class="form-control" id="login-password" placeholder="Enter password" autocomplete="current-password" />
+    </div>
+    <button class="btn btn-primary w-100" id="btn-login">
+      <i class="fa-solid fa-right-to-bracket me-2"></i>Sign In
+    </button>
+  </div>
+</div>
 
 <!-- Mobile top bar -->
 <div class="mobile-bar" id="mobile-bar">
@@ -211,7 +274,16 @@
     <a class="nav-link active" href="#" data-view="dashboard"><i class="fa-solid fa-chart-line"></i>Dashboard</a>
     <a class="nav-link" href="#" data-view="customers"><i class="fa-solid fa-users"></i>Customers</a>
     <a class="nav-link" href="#" data-view="trips"><i class="fa-solid fa-suitcase-rolling"></i>Trips</a>
+    <a class="nav-link" href="#" data-view="agents" id="nav-agents" style="display:none"><i class="fa-solid fa-user-tie"></i>Agents</a>
   </nav>
+  <div class="sidebar-user">
+    <div class="avatar" id="sidebar-avatar">?</div>
+    <div class="info">
+      <div class="uname" id="sidebar-uname">—</div>
+      <div class="urole" id="sidebar-urole">—</div>
+    </div>
+    <button class="logout-btn" id="btn-logout" title="Sign out"><i class="fa-solid fa-right-from-bracket"></i></button>
+  </div>
 </div>
 
 <!-- Main -->
@@ -308,7 +380,6 @@
 
   <!-- ── Trip Detail ── -->
   <div class="view" id="view-trip-detail">
-    <!-- Print-only header -->
     <div id="print-hdr" style="display:none">
       <h2 id="print-trip-name"></h2>
       <p id="print-trip-meta"></p>
@@ -359,6 +430,56 @@
         <span id="thinking-msg">Connecting…</span>
       </div>
       <div id="itinerary-content" style="display:none"></div>
+    </div>
+
+    <!-- Review panel (shown when itinerary exists) -->
+    <div class="review-panel" id="review-panel" style="display:none">
+      <h5><i class="fa-solid fa-clipboard-check me-2 text-primary"></i>Agent Review</h5>
+      <div id="existing-review"></div>
+      <div id="review-form-wrap">
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:.88rem">Decision</label>
+          <select class="form-select" id="review-status">
+            <option value="accepted">✅ Accept Itinerary</option>
+            <option value="changes_suggested">📝 Suggest Changes</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:.88rem">Comment <span class="text-muted fw-normal">(optional)</span></label>
+          <textarea class="form-control" id="review-comment" rows="3" placeholder="Notes for the customer or the team…"></textarea>
+        </div>
+        <button class="btn btn-primary btn-sm" id="btn-submit-review">
+          <i class="fa-solid fa-paper-plane me-1"></i>Submit Review
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Agents (admin only) ── -->
+  <div class="view" id="view-agents">
+    <div class="topbar">
+      <h1>Travel Agents</h1>
+      <button class="btn btn-primary btn-sm" id="btn-add-agent"><i class="fa-solid fa-plus me-1"></i><span class="btn-txt">Add Agent</span></button>
+    </div>
+    <div class="table-card">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Name</th>
+              <th>Username</th>
+              <th class="d-none d-md-table-cell">Email</th>
+              <th class="d-none d-lg-table-cell">Specialty</th>
+              <th class="d-none d-lg-table-cell">Languages</th>
+              <th class="d-none d-sm-table-cell">Exp.</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="agents-tbody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -452,6 +573,56 @@
   </div>
 </div>
 
+<!-- ── Agent Modal ── -->
+<div class="modal fade" id="agentModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title" id="agentModalTitle">Add Agent</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <form id="agentForm">
+          <input type="hidden" id="agent-id" />
+          <div class="row g-3">
+            <div class="col-12 col-sm-6">
+              <label class="form-label">Full Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="agent-name" required />
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label">Username <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="agent-username" required autocomplete="off" />
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label" id="agent-pwd-label">Password <span class="text-danger">*</span></label>
+              <input type="password" class="form-control" id="agent-password" autocomplete="new-password" />
+              <div class="form-text" id="agent-pwd-hint" style="display:none">Leave blank to keep existing password</div>
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" id="agent-email" />
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label">Phone</label>
+              <input type="text" class="form-control" id="agent-phone" />
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label">Experience (years)</label>
+              <input type="number" class="form-control" id="agent-exp" min="0" max="50" value="0" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Specialty</label>
+              <input type="text" class="form-control" id="agent-specialty" placeholder="e.g. Luxury travel, Adventure, Family trips" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Languages</label>
+              <input type="text" class="form-control" id="agent-languages" placeholder="e.g. English, Spanish, French" />
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" id="btn-save-agent">Save</button></div>
+    </div>
+  </div>
+</div>
+
 <!-- ── Delete Modal ── -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
   <div class="modal-dialog modal-sm">
@@ -474,22 +645,129 @@
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
 <script>
 // ─────────────────────────────────────────────
-// State
+// Auth state
 // ─────────────────────────────────────────────
-let allCustomers = [], allTrips = [];
+let authToken = localStorage.getItem('crm_token') || null;
+let currentUser = JSON.parse(localStorage.getItem('crm_user') || 'null');
+
+function saveAuth(token, user) {
+  authToken = token;
+  currentUser = user;
+  localStorage.setItem('crm_token', token);
+  localStorage.setItem('crm_user', JSON.stringify(user));
+}
+
+function clearAuth() {
+  authToken = null;
+  currentUser = null;
+  localStorage.removeItem('crm_token');
+  localStorage.removeItem('crm_user');
+}
+
+// ─────────────────────────────────────────────
+// App state
+// ─────────────────────────────────────────────
+let allCustomers = [], allTrips = [], allAgents = [];
 let currentTripId = null, deleteCb = null;
 let statusFilter = 'all', streaming = false;
 
-const toastEl  = document.getElementById('toast');
-const bsToast  = new bootstrap.Toast(toastEl, { delay: 3200 });
-const custModal = new bootstrap.Modal('#customerModal');
-const tripModal = new bootstrap.Modal('#tripModal');
-const delModal  = new bootstrap.Modal('#deleteModal');
+const toastEl   = document.getElementById('toast');
+const bsToast   = new bootstrap.Toast(toastEl, { delay: 3200 });
+const custModal  = new bootstrap.Modal('#customerModal');
+const tripModal  = new bootstrap.Modal('#tripModal');
+const agentModal = new bootstrap.Modal('#agentModal');
+const delModal   = new bootstrap.Modal('#deleteModal');
 
 function toast(msg, v = 'dark') {
   toastEl.className = `toast align-items-center text-bg-${v} border-0`;
   document.getElementById('toast-msg').textContent = msg;
   bsToast.show();
+}
+
+// ─────────────────────────────────────────────
+// API
+// ─────────────────────────────────────────────
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (authToken) opts.headers['Authorization'] = 'Bearer ' + authToken;
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch('/api' + path, opts);
+  if (res.status === 401) { doLogout(); return; }
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(e.detail || res.statusText);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+// ─────────────────────────────────────────────
+// Login
+// ─────────────────────────────────────────────
+const loginScreen = document.getElementById('login-screen');
+
+function showLogin() {
+  loginScreen.classList.remove('hidden');
+}
+function hideLogin() {
+  loginScreen.classList.add('hidden');
+}
+
+document.getElementById('btn-login').addEventListener('click', doLogin);
+document.getElementById('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+async function doLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  if (!username || !password) { errEl.textContent = 'Please enter username and password.'; errEl.style.display = ''; return; }
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing in…';
+  try {
+    const data = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!data.ok) {
+      const e = await data.json().catch(() => ({}));
+      throw new Error(e.detail || 'Login failed');
+    }
+    const json = await data.json();
+    saveAuth(json.token, json.user);
+    hideLogin();
+    initApp();
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.style.display = '';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket me-2"></i>Sign In';
+  }
+}
+
+function doLogout() {
+  clearAuth();
+  document.getElementById('login-username').value = '';
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-error').style.display = 'none';
+  showLogin();
+}
+
+document.getElementById('btn-logout').addEventListener('click', doLogout);
+
+// ─────────────────────────────────────────────
+// Sidebar user info
+// ─────────────────────────────────────────────
+function updateSidebarUser() {
+  if (!currentUser) return;
+  document.getElementById('sidebar-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
+  document.getElementById('sidebar-uname').textContent = currentUser.name;
+  document.getElementById('sidebar-urole').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Travel Agent';
+  if (currentUser.role === 'admin') {
+    document.getElementById('nav-agents').style.display = '';
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -524,23 +802,9 @@ document.querySelectorAll('#sidebar nav .nav-link').forEach(link => {
     if (v === 'dashboard') loadDashboard();
     if (v === 'customers') loadCustomers();
     if (v === 'trips') loadTrips();
+    if (v === 'agents') loadAgents();
   });
 });
-
-// ─────────────────────────────────────────────
-// API
-// ─────────────────────────────────────────────
-async function api(method, path, body) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch('/api' + path, opts);
-  if (!res.ok) {
-    const e = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(e.detail || res.statusText);
-  }
-  if (res.status === 204) return null;
-  return res.json();
-}
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -551,6 +815,11 @@ function badge(status) {
   return `<span class="badge-s s-${status}">${status.charAt(0).toUpperCase()+status.slice(1)}</span>`;
 }
 
+function reviewBadge(status) {
+  const label = status === 'accepted' ? '✅ Accepted' : '📝 Changes Suggested';
+  return `<span class="badge-s r-${status}">${label}</span>`;
+}
+
 // ─────────────────────────────────────────────
 // Dashboard
 // ─────────────────────────────────────────────
@@ -559,6 +828,7 @@ async function loadDashboard() {
     new Date().toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
   try {
     const d = await api('GET', '/dashboard/stats');
+    if (!d) return;
     document.getElementById('stat-customers').textContent   = d.total_customers;
     document.getElementById('stat-trips').textContent       = d.total_trips;
     document.getElementById('stat-itineraries').textContent = d.total_itineraries;
@@ -579,7 +849,7 @@ async function loadDashboard() {
 // Customers
 // ─────────────────────────────────────────────
 async function loadCustomers() {
-  try { allCustomers = await api('GET','/customers'); renderCustomers(allCustomers); }
+  try { allCustomers = await api('GET','/customers') || []; renderCustomers(allCustomers); }
   catch(e) { toast('Failed to load customers: '+e.message,'danger'); }
 }
 
@@ -615,6 +885,7 @@ document.getElementById('btn-add-customer').addEventListener('click', () => {
 async function editCustomer(id) {
   try {
     const c = await api('GET','/customers/'+id);
+    if (!c) return;
     document.getElementById('custModalTitle').textContent = 'Edit Customer';
     document.getElementById('cust-id').value = c.id;
     document.getElementById('cust-name').value = c.name;
@@ -654,7 +925,7 @@ function confirmDelCustomer(id, name) {
 // Trips
 // ─────────────────────────────────────────────
 async function loadTrips() {
-  try { allTrips = await api('GET','/trips'); renderTrips(); }
+  try { allTrips = await api('GET','/trips') || []; renderTrips(); }
   catch(e) { toast('Failed to load trips: '+e.message,'danger'); }
 }
 
@@ -703,6 +974,7 @@ document.getElementById('btn-add-trip').addEventListener('click', async () => {
 async function editTrip(id) {
   try {
     const [t] = await Promise.all([api('GET','/trips/'+id), populateCustSelect()]);
+    if (!t) return;
     document.getElementById('tripModalTitle').textContent = 'Edit Trip';
     document.getElementById('trip-id').value = t.id;
     document.getElementById('trip-customer-id').value = t.customer_id;
@@ -720,7 +992,7 @@ async function editTrip(id) {
 }
 
 async function populateCustSelect() {
-  const custs = await api('GET','/customers');
+  const custs = await api('GET','/customers') || [];
   document.getElementById('trip-customer-id').innerHTML = custs.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
 }
 
@@ -761,8 +1033,10 @@ async function openTripDetail(id) {
   showView('trip-detail');
   document.querySelectorAll('#sidebar nav .nav-link').forEach(l=>l.classList.remove('active'));
   resetItinUI();
+  document.getElementById('review-panel').style.display = 'none';
   try {
     const t = await api('GET','/trips/'+id);
+    if (!t) return;
     document.getElementById('trip-detail-title').textContent = t.destination;
     document.getElementById('print-trip-name').textContent = t.destination;
     document.getElementById('print-trip-meta').textContent =
@@ -792,15 +1066,53 @@ async function openTripDetail(id) {
         </div>`
       : '<p class="text-muted mb-0">No customer data</p>';
 
-    if (t.itinerary) showItinerary(t.itinerary);
+    if (t.itinerary) {
+      showItinerary(t.itinerary);
+      renderReviewPanel(t.review);
+    }
   } catch(e) { toast('Error loading trip: '+e.message,'danger'); }
 }
+
+// ─────────────────────────────────────────────
+// Review panel
+// ─────────────────────────────────────────────
+function renderReviewPanel(review) {
+  const panel = document.getElementById('review-panel');
+  panel.style.display = '';
+  const existingEl = document.getElementById('existing-review');
+  if (review) {
+    const cls = review.status === 'accepted' ? 'rv-accepted' : 'rv-changes';
+    existingEl.innerHTML = `
+      <div class="review-existing ${cls} mb-3">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          ${reviewBadge(review.status)}
+          <span class="text-muted" style="font-size:.78rem">by ${esc(review.agent_name||'Agent')} · ${new Date(review.reviewed_at).toLocaleDateString()}</span>
+        </div>
+        ${review.comment ? `<p class="mb-0 mt-1" style="font-size:.88rem">${esc(review.comment)}</p>` : ''}
+      </div>`;
+    document.getElementById('review-status').value = review.status;
+    document.getElementById('review-comment').value = review.comment || '';
+  } else {
+    existingEl.innerHTML = '';
+  }
+}
+
+document.getElementById('btn-submit-review').addEventListener('click', async () => {
+  if (!currentTripId) return;
+  const status = document.getElementById('review-status').value;
+  const comment = document.getElementById('review-comment').value.trim() || null;
+  try {
+    const t = await api('POST', `/trips/${currentTripId}/review`, { status, comment });
+    if (!t) return;
+    renderReviewPanel(t.review);
+    toast('Review submitted', 'success');
+  } catch(e) { toast('Error: '+e.message,'danger'); }
+});
 
 // ─────────────────────────────────────────────
 // Itinerary rendering
 // ─────────────────────────────────────────────
 function applyItinStyles(el) {
-  // Wrap Day N headings in gradient cards
   Array.from(el.querySelectorAll('h2')).forEach(h2 => {
     if (/day\s*\d+/i.test(h2.textContent)) {
       const card = document.createElement('div'); card.className = 'itin-day';
@@ -818,7 +1130,6 @@ function applyItinStyles(el) {
       h2.classList.add('itin-sh');
     }
   });
-  // Classify time-of-day h3
   el.querySelectorAll('.itin-day-body h3').forEach(h3 => {
     const t = h3.textContent.toLowerCase();
     if      (t.includes('morning'))                                    h3.classList.add('t-morning');
@@ -827,9 +1138,7 @@ function applyItinStyles(el) {
     else if (t.includes('night'))                                      h3.classList.add('t-night');
     else                                                               h3.classList.add('t-other');
   });
-  // Weather lines
   el.querySelectorAll('p').forEach(p => { if (/weather:/i.test(p.textContent)) p.classList.add('itin-weather'); });
-  // Tip callouts
   el.querySelectorAll('blockquote').forEach(bq => bq.classList.add('itin-tip'));
 }
 
@@ -876,6 +1185,7 @@ async function streamItinerary(tripId) {
   streaming = true;
   document.getElementById('btn-generate').disabled = true;
   document.getElementById('btn-export-pdf').style.display = 'none';
+  document.getElementById('review-panel').style.display = 'none';
   document.getElementById('itin-placeholder').style.display = 'none';
   document.getElementById('itinerary-status-badge').innerHTML = '<span class="badge bg-primary">Generating…</span>';
 
@@ -888,7 +1198,10 @@ async function streamItinerary(tripId) {
   let raw = '';
 
   try {
-    const resp = await fetch(`/api/trips/${tripId}/generate-itinerary`);
+    const resp = await fetch(`/api/trips/${tripId}/generate-itinerary`, {
+      headers: authToken ? { 'Authorization': 'Bearer ' + authToken } : {},
+    });
+    if (resp.status === 401) { doLogout(); return; }
     if (!resp.ok) throw new Error('HTTP '+resp.status);
     const reader = resp.body.getReader();
     const dec = new TextDecoder();
@@ -924,6 +1237,7 @@ async function streamItinerary(tripId) {
           document.getElementById('btn-generate').disabled = false;
           document.getElementById('btn-export-pdf').style.display = '';
           streaming = false;
+          renderReviewPanel(null);
           toast('Itinerary generated and saved!','success');
         } else if (ev.type==='error') {
           thinkEl.style.display = 'none';
@@ -947,6 +1261,96 @@ async function streamItinerary(tripId) {
 }
 
 // ─────────────────────────────────────────────
+// Agents (admin only)
+// ─────────────────────────────────────────────
+async function loadAgents() {
+  try { allAgents = await api('GET','/admin/agents') || []; renderAgents(); }
+  catch(e) { toast('Failed to load agents: '+e.message,'danger'); }
+}
+
+function renderAgents() {
+  const tb = document.getElementById('agents-tbody');
+  if (!allAgents.length) { tb.innerHTML='<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-user-slash"></i><p>No agents</p></div></td></tr>'; return; }
+  tb.innerHTML = allAgents.map(a=>`
+    <tr>
+      <td><strong>${esc(a.name)}</strong>${a.role==='admin'?' <span class="badge bg-primary ms-1" style="font-size:.68rem">admin</span>':''}</td>
+      <td class="text-muted">${esc(a.username)}</td>
+      <td class="d-none d-md-table-cell">${esc(a.email||'—')}</td>
+      <td class="d-none d-lg-table-cell">${esc(a.specialty||'—')}</td>
+      <td class="d-none d-lg-table-cell">${esc(a.languages||'—')}</td>
+      <td class="d-none d-sm-table-cell">${a.experience_years||0}y</td>
+      <td><span class="badge-s ${a.is_active?'s-confirmed':'s-cancelled'}">${a.is_active?'Active':'Inactive'}</span></td>
+      <td>
+        <button class="btn btn-sm btn-outline-primary me-1" onclick="editAgent(${a.id})"><i class="fa-solid fa-pen"></i></button>
+        ${a.username!=='admin'?`<button class="btn btn-sm btn-outline-danger" onclick="confirmDelAgent(${a.id},'${esc(a.name)}')"><i class="fa-solid fa-trash"></i></button>`:''}
+      </td>
+    </tr>`).join('');
+}
+
+document.getElementById('btn-add-agent').addEventListener('click', () => {
+  document.getElementById('agentModalTitle').textContent = 'Add Agent';
+  document.getElementById('agentForm').reset();
+  document.getElementById('agent-id').value = '';
+  document.getElementById('agent-pwd-label').innerHTML = 'Password <span class="text-danger">*</span>';
+  document.getElementById('agent-pwd-hint').style.display = 'none';
+  document.getElementById('agent-password').required = true;
+  agentModal.show();
+});
+
+async function editAgent(id) {
+  const a = allAgents.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById('agentModalTitle').textContent = 'Edit Agent';
+  document.getElementById('agent-id').value = a.id;
+  document.getElementById('agent-name').value = a.name;
+  document.getElementById('agent-username').value = a.username;
+  document.getElementById('agent-password').value = '';
+  document.getElementById('agent-password').required = false;
+  document.getElementById('agent-pwd-label').innerHTML = 'Password';
+  document.getElementById('agent-pwd-hint').style.display = '';
+  document.getElementById('agent-email').value = a.email||'';
+  document.getElementById('agent-phone').value = a.phone||'';
+  document.getElementById('agent-exp').value = a.experience_years||0;
+  document.getElementById('agent-specialty').value = a.specialty||'';
+  document.getElementById('agent-languages').value = a.languages||'';
+  agentModal.show();
+}
+
+document.getElementById('btn-save-agent').addEventListener('click', async () => {
+  const form = document.getElementById('agentForm');
+  if (!form.checkValidity()) { form.reportValidity(); return; }
+  const id = document.getElementById('agent-id').value;
+  const p = {
+    name: document.getElementById('agent-name').value.trim(),
+    username: document.getElementById('agent-username').value.trim(),
+    email: document.getElementById('agent-email').value.trim()||null,
+    phone: document.getElementById('agent-phone').value.trim()||null,
+    experience_years: parseInt(document.getElementById('agent-exp').value)||0,
+    specialty: document.getElementById('agent-specialty').value.trim()||null,
+    languages: document.getElementById('agent-languages').value.trim()||null,
+  };
+  const pwd = document.getElementById('agent-password').value;
+  if (pwd) p.password = pwd;
+  try {
+    if (id) {
+      await api('PUT','/admin/agents/'+id, p);
+      toast('Agent updated');
+    } else {
+      if (!pwd) { toast('Password is required','danger'); return; }
+      await api('POST','/admin/agents', {...p, password: pwd});
+      toast('Agent created','success');
+    }
+    agentModal.hide(); loadAgents();
+  } catch(e) { toast('Error: '+e.message,'danger'); }
+});
+
+function confirmDelAgent(id, name) {
+  document.getElementById('del-confirm-text').textContent = `Remove agent "${name}"? This cannot be undone.`;
+  deleteCb = async () => { try { await api('DELETE','/admin/agents/'+id); toast('Agent removed'); loadAgents(); } catch(e) { toast(e.message,'danger'); } };
+  delModal.show();
+}
+
+// ─────────────────────────────────────────────
 // Delete confirm
 // ─────────────────────────────────────────────
 document.getElementById('btn-confirm-del').addEventListener('click', async () => {
@@ -958,7 +1362,18 @@ document.getElementById('btn-confirm-del').addEventListener('click', async () =>
 // ─────────────────────────────────────────────
 // Init
 // ─────────────────────────────────────────────
-loadDashboard();
+function initApp() {
+  updateSidebarUser();
+  showView('customers');
+  loadCustomers();
+}
+
+if (authToken && currentUser) {
+  hideLogin();
+  initApp();
+} else {
+  showLogin();
+}
 </script>
 </body>
 </html>
