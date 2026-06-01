@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Travel Agent CRM</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <style>
+    :root { --sidebar-width: 240px; }
+    body { min-height: 100vh; background: #f4f6fb; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: var(--sidebar-width); min-height: 100vh;
+      background: linear-gradient(180deg, #1a2236 0%, #243155 100%);
+      position: fixed; left: 0; top: 0;
+      display: flex; flex-direction: column; z-index: 100;
+    }
+    #sidebar .brand { padding: 24px 20px 16px; color: #fff; font-size: 1.1rem; font-weight: 700; letter-spacing: .4px; border-bottom: 1px solid rgba(255,255,255,.1); }
+    #sidebar .brand i { color: #4ea8ff; margin-right: 8px; }
+    #sidebar nav { flex: 1; padding: 12px 0; }
+    #sidebar nav .nav-link { color: rgba(255,255,255,.6); padding: 10px 20px; font-size: .9rem; display: flex; align-items: center; gap: 10px; border-left: 3px solid transparent; transition: all .18s; }
+    #sidebar nav .nav-link:hover, #sidebar nav .nav-link.active { color: #fff; background: rgba(255,255,255,.08); border-left-color: #4ea8ff; }
+    #sidebar nav .nav-link i { width: 18px; text-align: center; }
+
+    /* ── Main ── */
+    #main { margin-left: var(--sidebar-width); padding: 28px 32px; min-height: 100vh; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .topbar h1 { font-size: 1.45rem; font-weight: 700; margin: 0; color: #1a2236; }
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── Stat Cards ── */
+    .stat-card { background: #fff; border-radius: 14px; padding: 22px 24px; box-shadow: 0 1px 6px rgba(0,0,0,.07); }
+    .stat-card .icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-bottom: 14px; }
+    .stat-card .value { font-size: 2rem; font-weight: 700; line-height: 1; color: #1a2236; }
+    .stat-card .label { color: #6c757d; font-size: .83rem; margin-top: 5px; }
+
+    /* ── Table Card ── */
+    .table-card { background: #fff; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,.07); overflow: hidden; }
+    .table-card .card-header { padding: 16px 20px; background: #fff; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; }
+    .table > :not(caption) > * > * { padding: .72rem 1.1rem; vertical-align: middle; }
+
+    /* ── Status Badges ── */
+    .badge-status { font-size: .76rem; padding: .3em .7em; border-radius: 6px; font-weight: 600; display: inline-block; }
+    .status-planning   { background: #e8f0fe; color: #1a73e8; }
+    .status-confirmed  { background: #e6f4ea; color: #188038; }
+    .status-completed  { background: #f3e8fd; color: #7b1fa2; }
+    .status-cancelled  { background: #fce8e6; color: #c5221f; }
+
+    /* ── Trip Detail ── */
+    .trip-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 28px; }
+    .trip-info-item .label { font-size: .76rem; color: #9ca3af; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 2px; }
+    .trip-info-item .value { font-weight: 600; color: #1a2236; font-size: .95rem; }
+    .back-btn { cursor: pointer; font-size: .9rem; }
+
+    /* ── Status filter tabs ── */
+    .tab-filter .nav-link { font-size: .87rem; padding: .42rem .9rem; color: #495057; border-radius: 6px; }
+    .tab-filter .nav-link.active { background: #0d6efd; color: #fff; }
+
+    /* ── Thinking indicator ── */
+    .thinking-indicator { display: flex; align-items: center; gap: 8px; color: #6c757d; font-size: .9rem; padding: 12px 0; }
+    .thinking-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ea8ff; animation: tdot 1.2s ease-in-out infinite; }
+    .thinking-dot:nth-child(2) { animation-delay: .2s; }
+    .thinking-dot:nth-child(3) { animation-delay: .4s; }
+    @keyframes tdot { 0%,80%,100%{transform:scale(.7);opacity:.4}40%{transform:scale(1.2);opacity:1} }
+    .streaming-cursor::after { content: '▋'; animation: blink .7s step-end infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ── Empty state ── */
+    .empty-state { text-align: center; padding: 60px 20px; color: #adb5bd; }
+    .empty-state i { font-size: 2.8rem; margin-bottom: 14px; display: block; }
+
+    /* ════════════════════════════════════════
+       Itinerary Visual Styles
+    ════════════════════════════════════════ */
+    .itinerary-wrap { background: #fff; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,.07); padding: 28px; }
+
+    /* Section headers (non-day h2: Getting There, Weather, etc.) */
+    #itinerary-content .itin-section-header {
+      font-size: 1.05rem; font-weight: 700; color: #1a2236;
+      margin: 2rem 0 .9rem; padding-bottom: .45rem;
+      border-bottom: 2px solid #e9ecef; display: flex; align-items: center; gap: 8px;
+    }
+
+    /* Day cards */
+    .itin-day-card { border-radius: 14px; overflow: hidden; margin: 1.75rem 0; box-shadow: 0 3px 16px rgba(0,0,0,.10); }
+    .itin-day-header {
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      color: #fff; padding: 16px 22px;
+    }
+    .itin-day-header h2 { margin: 0; font-size: 1.05rem; font-weight: 700; color: #fff; }
+    .itin-day-body { background: #fff; padding: 20px 22px; border: 1px solid #e9ecef; border-top: none; border-radius: 0 0 14px 14px; }
+
+    /* Time-of-day sections */
+    .itin-day-body h3 {
+      font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+      padding: 7px 14px; border-radius: 7px; margin: 1.3rem 0 .7rem; display: inline-flex; align-items: center; gap: 6px; width: 100%;
+    }
+    .time-morning  { background: #fff5eb; color: #c2410c; border-left: 4px solid #f97316; }
+    .time-afternoon{ background: #eff6ff; color: #1d4ed8; border-left: 4px solid #3b82f6; }
+    .time-evening  { background: #f5f3ff; color: #6d28d9; border-left: 4px solid #8b5cf6; }
+    .time-night    { background: #0f172a0d; color: #334155; border-left: 4px solid #64748b; }
+    .time-other    { background: #f8f9fa; color: #374151; border-left: 4px solid #9ca3af; }
+
+    /* Weather line */
+    .itin-weather {
+      background: linear-gradient(90deg, #ecfdf5, #f0fdf4);
+      border: 1px solid #bbf7d0; border-radius: 8px;
+      padding: 9px 14px; margin: .5rem 0 1rem;
+      color: #166534; font-size: .88rem; font-weight: 500;
+    }
+
+    /* Tips blockquote */
+    .itin-tip {
+      background: #fffbeb; border-left: 4px solid #f59e0b;
+      border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 1rem 0; color: #78350f;
+    }
+    .itin-tip p { margin: 0; font-size: .9rem; }
+
+    /* Lists */
+    #itinerary-content li { margin-bottom: .35rem; line-height: 1.65; }
+
+    /* Trip title (h1) */
+    #itinerary-content > h1, #itinerary-content .itin-title {
+      font-size: 1.55rem; font-weight: 800; color: #1a2236;
+      margin-bottom: 1rem; padding-bottom: .6rem; border-bottom: 3px solid #e9ecef;
+    }
+
+    /* ════════════════════════════════════════
+       Print / PDF Styles
+    ════════════════════════════════════════ */
+    @media print {
+      #sidebar, #btn-generate-itinerary, #btn-export-pdf,
+      #btn-edit-trip-detail, .topbar .d-flex.gap-2,
+      #itinerary-status-badge, .col-md-6:last-child { display: none !important; }
+      body { background: #fff !important; }
+      #main { margin-left: 0 !important; padding: 10px !important; }
+      .view { display: none !important; }
+      #view-trip-detail { display: block !important; }
+      .topbar { margin-bottom: 10px !important; }
+      .row.g-3.mb-4 .col-md-6:first-child { flex: 0 0 100%; max-width: 100%; }
+      .table-card { box-shadow: none !important; border: 1px solid #dee2e6 !important; }
+      .itinerary-wrap { box-shadow: none !important; padding: 0 !important; }
+      .itin-day-card { box-shadow: 0 0 0 1px #dee2e6 !important; break-inside: avoid; page-break-inside: avoid; }
+      .itin-day-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .time-morning, .time-afternoon, .time-evening, .time-night, .time-other { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .itin-weather { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #print-header { display: block !important; text-align: center; padding-bottom: 16px; border-bottom: 2px solid #1e3c72; margin-bottom: 20px; }
+      #print-header h2 { color: #1e3c72; font-size: 1.5rem; margin: 0 0 4px; }
+      #print-header p { color: #6c757d; margin: 0; font-size: .88rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div id="sidebar">
+  <div class="brand"><i class="fa-solid fa-plane-departure"></i>Travel CRM</div>
+  <nav>
+    <a class="nav-link active" href="#" data-view="dashboard"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+    <a class="nav-link" href="#" data-view="customers"><i class="fa-solid fa-users"></i> Customers</a>
+    <a class="nav-link" href="#" data-view="trips"><i class="fa-solid fa-suitcase-rolling"></i> Trips</a>
+  </nav>
+</div>
+
+<!-- Main -->
+<div id="main">
+
+  <!-- ── Dashboard ── -->
+  <div class="view active" id="view-dashboard">
+    <div class="topbar">
+      <h1>Dashboard</h1>
+      <span class="text-muted small" id="dash-date"></span>
+    </div>
+    <div class="row g-3 mb-4">
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="icon" style="background:#e8f0fe"><i class="fa-solid fa-users" style="color:#1a73e8"></i></div>
+          <div class="value" id="stat-customers">—</div>
+          <div class="label">Total Customers</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="icon" style="background:#e6f4ea"><i class="fa-solid fa-suitcase-rolling" style="color:#188038"></i></div>
+          <div class="value" id="stat-trips">—</div>
+          <div class="label">Total Trips</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="icon" style="background:#f3e8fd"><i class="fa-solid fa-map" style="color:#7b1fa2"></i></div>
+          <div class="value" id="stat-itineraries">—</div>
+          <div class="label">Itineraries Generated</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="icon" style="background:#fff3e0"><i class="fa-solid fa-clock-rotate-left" style="color:#e65100"></i></div>
+          <div class="value" id="stat-planning">—</div>
+          <div class="label">Trips in Planning</div>
+        </div>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="card-header"><span class="fw-semibold">Recent Trips</span></div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light"><tr><th>Customer</th><th>Destination</th><th>Duration</th><th>Status</th><th>Start Date</th></tr></thead>
+          <tbody id="dash-trips-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Customers ── -->
+  <div class="view" id="view-customers">
+    <div class="topbar">
+      <h1>Customers</h1>
+      <button class="btn btn-primary btn-sm" id="btn-add-customer"><i class="fa-solid fa-plus me-1"></i>Add Customer</button>
+    </div>
+    <div class="mb-3">
+      <input type="text" class="form-control" id="customer-search" placeholder="Search by name or email…" style="max-width:320px" />
+    </div>
+    <div class="table-card">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light"><tr><th>Name</th><th>Email</th><th>Phone</th><th>Country</th><th>Trips</th><th>Actions</th></tr></thead>
+          <tbody id="customers-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Trips ── -->
+  <div class="view" id="view-trips">
+    <div class="topbar">
+      <h1>Trips</h1>
+      <button class="btn btn-primary btn-sm" id="btn-add-trip"><i class="fa-solid fa-plus me-1"></i>Add Trip</button>
+    </div>
+    <ul class="nav tab-filter mb-3" id="trips-status-tabs">
+      <li class="nav-item"><a class="nav-link active" href="#" data-status="all">All</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" data-status="planning">Planning</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" data-status="confirmed">Confirmed</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" data-status="completed">Completed</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" data-status="cancelled">Cancelled</a></li>
+    </ul>
+    <div class="table-card">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light"><tr><th>Customer</th><th>Destination</th><th>From</th><th>Days</th><th>Start</th><th>Budget</th><th>Status</th><th>Itin.</th><th>Actions</th></tr></thead>
+          <tbody id="trips-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Trip Detail ── -->
+  <div class="view" id="view-trip-detail">
+    <!-- Print-only header -->
+    <div id="print-header" style="display:none">
+      <h2 id="print-trip-name"></h2>
+      <p id="print-trip-meta"></p>
+    </div>
+
+    <div class="topbar">
+      <div class="d-flex align-items-center gap-3">
+        <span class="back-btn text-primary" id="btn-back-trips"><i class="fa-solid fa-arrow-left me-1"></i>Trips</span>
+        <h1 id="trip-detail-title" class="mb-0">Trip Detail</h1>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" id="btn-edit-trip-detail"><i class="fa-solid fa-pen me-1"></i>Edit</button>
+        <button class="btn btn-outline-secondary btn-sm" id="btn-export-pdf" style="display:none">
+          <i class="fa-solid fa-file-pdf me-1"></i>Export PDF
+        </button>
+        <button class="btn btn-primary btn-sm" id="btn-generate-itinerary">
+          <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Generate Itinerary
+        </button>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-6">
+        <div class="table-card p-3 h-100">
+          <h6 class="text-uppercase text-muted mb-3" style="font-size:.72rem;letter-spacing:.7px">Trip Details</h6>
+          <div class="trip-info-grid" id="trip-detail-info"></div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="table-card p-3 h-100">
+          <h6 class="text-uppercase text-muted mb-3" style="font-size:.72rem;letter-spacing:.7px">Customer</h6>
+          <div id="trip-customer-info"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Itinerary -->
+    <div class="itinerary-wrap">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-map-location-dot me-2 text-primary"></i>Itinerary</h5>
+        <span id="itinerary-status-badge"></span>
+      </div>
+      <div id="itinerary-placeholder" class="empty-state">
+        <i class="fa-solid fa-route"></i>
+        <p class="mb-0">No itinerary yet.<br>Click <strong>Generate Itinerary</strong> to create one with AI.</p>
+      </div>
+      <div id="itinerary-thinking" class="thinking-indicator" style="display:none">
+        <div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div>
+        <span id="thinking-msg">Connecting to Claude AI…</span>
+      </div>
+      <div id="itinerary-content" style="display:none"></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+
+<!-- ── Customer Modal ── -->
+<div class="modal fade" id="customerModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title" id="customerModalTitle">Add Customer</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <form id="customerForm">
+          <input type="hidden" id="cust-id" />
+          <div class="mb-3"><label class="form-label">Name <span class="text-danger">*</span></label><input type="text" class="form-control" id="cust-name" required /></div>
+          <div class="mb-3"><label class="form-label">Email <span class="text-danger">*</span></label><input type="email" class="form-control" id="cust-email" required /></div>
+          <div class="row g-2 mb-3">
+            <div class="col"><label class="form-label">Phone</label><input type="text" class="form-control" id="cust-phone" /></div>
+            <div class="col"><label class="form-label">Country</label><input type="text" class="form-control" id="cust-country" /></div>
+          </div>
+          <div class="mb-3"><label class="form-label">Notes</label><textarea class="form-control" id="cust-notes" rows="3"></textarea></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btn-save-customer">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Trip Modal ── -->
+<div class="modal fade" id="tripModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title" id="tripModalTitle">Add Trip</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <form id="tripForm">
+          <input type="hidden" id="trip-id" />
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Customer <span class="text-danger">*</span></label>
+              <select class="form-select" id="trip-customer-id" required></select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Status</label>
+              <select class="form-select" id="trip-status">
+                <option value="planning">Planning</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Destination <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="trip-destination" placeholder="e.g. Tokyo, Japan" required />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Departure City <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="trip-departure-city" placeholder="e.g. London" required />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Departure Country <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="trip-departure-country" placeholder="e.g. United Kingdom" required />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Number of Days <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" id="trip-num-days" min="1" max="90" required />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Start Date</label>
+              <input type="date" class="form-control" id="trip-start-date" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Budget</label>
+              <input type="text" class="form-control" id="trip-budget" placeholder="e.g. $3,000" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Budget Type</label>
+              <select class="form-select" id="trip-budget-type">
+                <option value="overall">Overall Total</option>
+                <option value="per_person">Per Person</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Notes / Special Requests</label>
+              <textarea class="form-control" id="trip-notes" rows="3" placeholder="Dietary restrictions, accessibility needs, interests…"></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btn-save-trip">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete Confirm Modal ── -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>Delete</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="delete-confirm-text">Are you sure?</div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger btn-sm" id="btn-confirm-delete">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+  <div id="toast" class="toast align-items-center border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toast-msg"></div>
+      <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+<script>
+// ─────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────
+let allCustomers = [];
+let allTrips = [];
+let currentTripId = null;
+let deleteCallback = null;
+let tripsStatusFilter = 'all';
+let streamingActive = false;
+
+const toastEl = document.getElementById('toast');
+const bsToast = new bootstrap.Toast(toastEl, { delay: 3200 });
+const customerModal = new bootstrap.Modal('#customerModal');
+const tripModal = new bootstrap.Modal('#tripModal');
+const deleteModal = new bootstrap.Modal('#deleteModal');
+
+function toast(msg, variant = 'dark') {
+  toastEl.className = `toast align-items-center text-bg-${variant} border-0`;
+  document.getElementById('toast-msg').textContent = msg;
+  bsToast.show();
+}
+
+// ─────────────────────────────────────────────
+// Navigation
+// ─────────────────────────────────────────────
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('#sidebar nav .nav-link').forEach(l => {
+    l.classList.toggle('active', l.dataset.view === name);
+  });
+}
+
+document.querySelectorAll('#sidebar nav .nav-link').forEach(link => {
+  link.addEventListener('click', e => {
+    e.preventDefault();
+    const v = link.dataset.view;
+    showView(v);
+    if (v === 'dashboard') loadDashboard();
+    if (v === 'customers') loadCustomers();
+    if (v === 'trips') loadTrips();
+  });
+});
+
+// ─────────────────────────────────────────────
+// API helpers
+// ─────────────────────────────────────────────
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch('/api' + path, opts);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || res.statusText);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+// ─────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────
+function esc(str) {
+  if (str == null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function statusBadge(status) {
+  const cap = status.charAt(0).toUpperCase() + status.slice(1);
+  return `<span class="badge-status status-${status}">${cap}</span>`;
+}
+
+function budgetLabel(budget, budgetType) {
+  if (!budget) return '—';
+  const suffix = budgetType === 'per_person' ? ' / person' : ' total';
+  return `${esc(budget)}<small class="text-muted">${suffix}</small>`;
+}
+
+// ─────────────────────────────────────────────
+// Dashboard
+// ─────────────────────────────────────────────
+async function loadDashboard() {
+  document.getElementById('dash-date').textContent = new Date().toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  try {
+    const d = await api('GET', '/dashboard/stats');
+    document.getElementById('stat-customers').textContent = d.total_customers;
+    document.getElementById('stat-trips').textContent = d.total_trips;
+    document.getElementById('stat-itineraries').textContent = d.total_itineraries;
+    document.getElementById('stat-planning').textContent = d.status_counts.planning;
+    const tbody = document.getElementById('dash-trips-tbody');
+    if (!d.recent_trips.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No trips yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = d.recent_trips.map(t => `
+      <tr style="cursor:pointer" onclick="openTripDetail(${t.id})">
+        <td>${esc(t.customer_name || '—')}</td>
+        <td><strong>${esc(t.destination)}</strong></td>
+        <td>${t.num_days} days</td>
+        <td>${statusBadge(t.status)}</td>
+        <td>${t.start_date || '—'}</td>
+      </tr>`).join('');
+  } catch(e) { toast('Failed to load dashboard: ' + e.message, 'danger'); }
+}
+
+// ─────────────────────────────────────────────
+// Customers
+// ─────────────────────────────────────────────
+async function loadCustomers() {
+  try {
+    allCustomers = await api('GET', '/customers');
+    renderCustomers(allCustomers);
+  } catch(e) { toast('Failed to load customers: ' + e.message, 'danger'); }
+}
+
+function renderCustomers(list) {
+  const tbody = document.getElementById('customers-tbody');
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-users-slash"></i><p>No customers found</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(c => `
+    <tr>
+      <td><strong>${esc(c.name)}</strong></td>
+      <td>${esc(c.email)}</td>
+      <td>${esc(c.phone || '—')}</td>
+      <td>${esc(c.country || '—')}</td>
+      <td><span class="badge bg-light text-dark border">${c.trip_count}</span></td>
+      <td>
+        <button class="btn btn-sm btn-outline-primary me-1" onclick="editCustomer(${c.id})"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteCustomer(${c.id}, '${esc(c.name)}')"><i class="fa-solid fa-trash"></i></button>
+      </td>
+    </tr>`).join('');
+}
+
+document.getElementById('customer-search').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  renderCustomers(allCustomers.filter(c => c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)));
+});
+
+document.getElementById('btn-add-customer').addEventListener('click', () => {
+  document.getElementById('customerModalTitle').textContent = 'Add Customer';
+  document.getElementById('customerForm').reset();
+  document.getElementById('cust-id').value = '';
+  customerModal.show();
+});
+
+async function editCustomer(id) {
+  try {
+    const c = await api('GET', '/customers/' + id);
+    document.getElementById('customerModalTitle').textContent = 'Edit Customer';
+    document.getElementById('cust-id').value = c.id;
+    document.getElementById('cust-name').value = c.name;
+    document.getElementById('cust-email').value = c.email;
+    document.getElementById('cust-phone').value = c.phone || '';
+    document.getElementById('cust-country').value = c.country || '';
+    document.getElementById('cust-notes').value = c.notes || '';
+    customerModal.show();
+  } catch(e) { toast('Error: ' + e.message, 'danger'); }
+}
+
+document.getElementById('btn-save-customer').addEventListener('click', async () => {
+  const form = document.getElementById('customerForm');
+  if (!form.checkValidity()) { form.reportValidity(); return; }
+  const id = document.getElementById('cust-id').value;
+  const payload = {
+    name: document.getElementById('cust-name').value.trim(),
+    email: document.getElementById('cust-email').value.trim(),
+    phone: document.getElementById('cust-phone').value.trim() || null,
+    country: document.getElementById('cust-country').value.trim() || null,
+    notes: document.getElementById('cust-notes').value.trim() || null,
+  };
+  try {
+    if (id) { await api('PUT', '/customers/' + id, payload); toast('Customer updated'); }
+    else     { await api('POST', '/customers', payload); toast('Customer created', 'success'); }
+    customerModal.hide();
+    loadCustomers();
+  } catch(e) { toast('Error: ' + e.message, 'danger'); }
+});
+
+function confirmDeleteCustomer(id, name) {
+  document.getElementById('delete-confirm-text').textContent = `Delete customer "${name}" and all their trips?`;
+  deleteCallback = async () => {
+    try { await api('DELETE', '/customers/' + id); toast('Customer deleted'); loadCustomers(); }
+    catch(e) { toast('Error: ' + e.message, 'danger'); }
+  };
+  deleteModal.show();
+}
+
+// ─────────────────────────────────────────────
+// Trips
+// ─────────────────────────────────────────────
+async function loadTrips() {
+  try {
+    allTrips = await api('GET', '/trips');
+    renderTrips();
+  } catch(e) { toast('Failed to load trips: ' + e.message, 'danger'); }
+}
+
+function renderTrips() {
+  const list = tripsStatusFilter === 'all' ? allTrips : allTrips.filter(t => t.status === tripsStatusFilter);
+  const tbody = document.getElementById('trips-tbody');
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-suitcase"></i><p>No trips found</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(t => `
+    <tr>
+      <td>${esc(t.customer_name || '—')}</td>
+      <td><strong style="cursor:pointer;color:#0d6efd" onclick="openTripDetail(${t.id})">${esc(t.destination)}</strong></td>
+      <td class="text-muted small">${esc(t.departure_city)}, ${esc(t.departure_country)}</td>
+      <td>${t.num_days}d</td>
+      <td>${t.start_date || '—'}</td>
+      <td class="small">${t.budget ? `${esc(t.budget)}<br><span class="text-muted" style="font-size:.75rem">${t.budget_type === 'per_person' ? 'per person' : 'total'}</span>` : '—'}</td>
+      <td>${statusBadge(t.status)}</td>
+      <td>${t.has_itinerary ? '<i class="fa-solid fa-check text-success"></i>' : '<span class="text-muted">—</span>'}</td>
+      <td>
+        <button class="btn btn-sm btn-outline-secondary me-1" onclick="openTripDetail(${t.id})"><i class="fa-solid fa-eye"></i></button>
+        <button class="btn btn-sm btn-outline-primary me-1" onclick="editTrip(${t.id})"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteTrip(${t.id}, '${esc(t.destination)}')"><i class="fa-solid fa-trash"></i></button>
+      </td>
+    </tr>`).join('');
+}
+
+document.querySelectorAll('#trips-status-tabs .nav-link').forEach(tab => {
+  tab.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelectorAll('#trips-status-tabs .nav-link').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    tripsStatusFilter = tab.dataset.status;
+    renderTrips();
+  });
+});
+
+document.getElementById('btn-add-trip').addEventListener('click', async () => {
+  await populateCustomerSelect();
+  document.getElementById('tripModalTitle').textContent = 'Add Trip';
+  document.getElementById('tripForm').reset();
+  document.getElementById('trip-id').value = '';
+  document.getElementById('trip-status').value = 'planning';
+  document.getElementById('trip-budget-type').value = 'overall';
+  tripModal.show();
+});
+
+async function editTrip(id) {
+  try {
+    const [t] = await Promise.all([api('GET', '/trips/' + id), populateCustomerSelect()]);
+    document.getElementById('tripModalTitle').textContent = 'Edit Trip';
+    document.getElementById('trip-id').value = t.id;
+    document.getElementById('trip-customer-id').value = t.customer_id;
+    document.getElementById('trip-destination').value = t.destination;
+    document.getElementById('trip-departure-city').value = t.departure_city;
+    document.getElementById('trip-departure-country').value = t.departure_country;
+    document.getElementById('trip-num-days').value = t.num_days;
+    document.getElementById('trip-start-date').value = t.start_date || '';
+    document.getElementById('trip-status').value = t.status;
+    document.getElementById('trip-budget').value = t.budget || '';
+    document.getElementById('trip-budget-type').value = t.budget_type || 'overall';
+    document.getElementById('trip-notes').value = t.notes || '';
+    tripModal.show();
+  } catch(e) { toast('Error: ' + e.message, 'danger'); }
+}
+
+async function populateCustomerSelect() {
+  try {
+    const customers = await api('GET', '/customers');
+    document.getElementById('trip-customer-id').innerHTML =
+      customers.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  } catch(e) { toast('Failed to load customers: ' + e.message, 'danger'); }
+}
+
+document.getElementById('btn-save-trip').addEventListener('click', async () => {
+  const form = document.getElementById('tripForm');
+  if (!form.checkValidity()) { form.reportValidity(); return; }
+  const id = document.getElementById('trip-id').value;
+  const payload = {
+    customer_id: parseInt(document.getElementById('trip-customer-id').value),
+    destination: document.getElementById('trip-destination').value.trim(),
+    departure_city: document.getElementById('trip-departure-city').value.trim(),
+    departure_country: document.getElementById('trip-departure-country').value.trim(),
+    num_days: parseInt(document.getElementById('trip-num-days').value),
+    start_date: document.getElementById('trip-start-date').value || null,
+    status: document.getElementById('trip-status').value,
+    budget: document.getElementById('trip-budget').value.trim() || null,
+    budget_type: document.getElementById('trip-budget-type').value,
+    notes: document.getElementById('trip-notes').value.trim() || null,
+  };
+  try {
+    if (id) {
+      const { customer_id, ...upd } = payload;
+      await api('PUT', '/trips/' + id, upd);
+      toast('Trip updated');
+    } else {
+      await api('POST', '/trips', payload);
+      toast('Trip created', 'success');
+    }
+    tripModal.hide();
+    loadTrips();
+  } catch(e) { toast('Error: ' + e.message, 'danger'); }
+});
+
+function confirmDeleteTrip(id, dest) {
+  document.getElementById('delete-confirm-text').textContent = `Delete trip to "${dest}"?`;
+  deleteCallback = async () => {
+    try { await api('DELETE', '/trips/' + id); toast('Trip deleted'); loadTrips(); }
+    catch(e) { toast('Error: ' + e.message, 'danger'); }
+  };
+  deleteModal.show();
+}
+
+// ─────────────────────────────────────────────
+// Trip Detail
+// ─────────────────────────────────────────────
+async function openTripDetail(id) {
+  currentTripId = id;
+  showView('trip-detail');
+  document.querySelectorAll('#sidebar nav .nav-link').forEach(l => l.classList.remove('active'));
+  resetItineraryUI();
+
+  try {
+    const trip = await api('GET', '/trips/' + id);
+    document.getElementById('trip-detail-title').textContent = trip.destination;
+
+    // Print header
+    document.getElementById('print-trip-name').textContent = trip.destination;
+    document.getElementById('print-trip-meta').textContent =
+      `${trip.departure_city}, ${trip.departure_country} · ${trip.num_days} days` +
+      (trip.start_date ? ` · From ${trip.start_date}` : '') +
+      (trip.budget ? ` · Budget: ${trip.budget} ${trip.budget_type === 'per_person' ? 'p.p.' : 'total'}` : '');
+
+    const budgetVal = trip.budget
+      ? `${trip.budget} <span class="text-muted fw-normal" style="font-size:.8rem">${trip.budget_type === 'per_person' ? '/ person' : 'total'}</span>`
+      : '—';
+
+    document.getElementById('trip-detail-info').innerHTML = [
+      ['Destination', esc(trip.destination)],
+      ['Departure', `${esc(trip.departure_city)}, ${esc(trip.departure_country)}`],
+      ['Duration', `${trip.num_days} days`],
+      ['Start Date', trip.start_date || '—'],
+      ['Status', statusBadge(trip.status)],
+      ['Budget', budgetVal],
+    ].map(([l, v]) => `<div class="trip-info-item"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('')
+     + (trip.notes ? `<div class="trip-info-item" style="grid-column:1/-1"><div class="label">Notes</div><div class="value" style="font-weight:400;color:#495057">${esc(trip.notes)}</div></div>` : '');
+
+    document.getElementById('trip-customer-info').innerHTML = trip.customer_name
+      ? `<div class="d-flex align-items-center gap-3">
+          <div style="width:46px;height:46px;border-radius:50%;background:#e8f0fe;display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700;color:#1a73e8;flex-shrink:0">
+            ${esc(trip.customer_name.charAt(0).toUpperCase())}
+          </div>
+          <div>
+            <div class="fw-bold">${esc(trip.customer_name)}</div>
+            <div class="text-muted small">${esc(trip.customer_email || '')}</div>
+          </div>
+        </div>`
+      : '<p class="text-muted mb-0">No customer data</p>';
+
+    if (trip.itinerary) showItinerary(trip.itinerary);
+  } catch(e) { toast('Error loading trip: ' + e.message, 'danger'); }
+}
+
+// ─────────────────────────────────────────────
+// Itinerary Rendering
+// ─────────────────────────────────────────────
+function applyItineraryStyles(container) {
+  // Wrap Day N sections in gradient cards
+  Array.from(container.querySelectorAll('h2')).forEach(h2 => {
+    if (/day\s*\d+/i.test(h2.textContent)) {
+      const card = document.createElement('div');
+      card.className = 'itin-day-card';
+
+      const hdr = document.createElement('div');
+      hdr.className = 'itin-day-header';
+      const inner = document.createElement('h2');
+      inner.innerHTML = h2.innerHTML;
+      hdr.appendChild(inner);
+      card.appendChild(hdr);
+
+      const body = document.createElement('div');
+      body.className = 'itin-day-body';
+
+      const siblings = [];
+      let node = h2.nextSibling;
+      while (node && !(node.nodeType === 1 && node.tagName === 'H2')) {
+        siblings.push(node);
+        node = node.nextSibling;
+      }
+      siblings.forEach(s => body.appendChild(s));
+      card.appendChild(body);
+      h2.parentNode.replaceChild(card, h2);
+    } else {
+      h2.classList.add('itin-section-header');
+    }
+  });
+
+  // Classify time-of-day h3 headers
+  container.querySelectorAll('.itin-day-body h3').forEach(h3 => {
+    const t = h3.textContent.toLowerCase();
+    if (t.includes('morning'))                           h3.classList.add('time-morning');
+    else if (t.includes('afternoon') || t.includes('midday') || t.includes('lunch')) h3.classList.add('time-afternoon');
+    else if (t.includes('evening') || t.includes('dinner')) h3.classList.add('time-evening');
+    else if (t.includes('night'))                        h3.classList.add('time-night');
+    else                                                 h3.classList.add('time-other');
+  });
+
+  // Style weather lines
+  container.querySelectorAll('p').forEach(p => {
+    if (/weather:/i.test(p.textContent)) p.classList.add('itin-weather');
+  });
+
+  // Style blockquotes as tip callouts
+  container.querySelectorAll('blockquote').forEach(bq => bq.classList.add('itin-tip'));
+}
+
+function showItinerary(markdown) {
+  document.getElementById('itinerary-placeholder').style.display = 'none';
+  document.getElementById('itinerary-thinking').style.display = 'none';
+  const el = document.getElementById('itinerary-content');
+  el.style.display = '';
+  el.classList.remove('streaming-cursor');
+  el.innerHTML = marked.parse(markdown);
+  applyItineraryStyles(el);
+  document.getElementById('itinerary-status-badge').innerHTML = '<span class="badge bg-success">Saved</span>';
+  document.getElementById('btn-export-pdf').style.display = '';
+}
+
+function resetItineraryUI() {
+  document.getElementById('itinerary-placeholder').style.display = '';
+  document.getElementById('itinerary-thinking').style.display = 'none';
+  const el = document.getElementById('itinerary-content');
+  el.style.display = 'none';
+  el.innerHTML = '';
+  el.classList.remove('streaming-cursor');
+  document.getElementById('itinerary-status-badge').innerHTML = '';
+  document.getElementById('btn-generate-itinerary').disabled = false;
+  document.getElementById('btn-export-pdf').style.display = 'none';
+  streamingActive = false;
+}
+
+// ─────────────────────────────────────────────
+// Itinerary Streaming
+// ─────────────────────────────────────────────
+document.getElementById('btn-generate-itinerary').addEventListener('click', () => {
+  if (!currentTripId || streamingActive) return;
+  streamItinerary(currentTripId);
+});
+
+document.getElementById('btn-back-trips').addEventListener('click', () => {
+  showView('trips');
+  document.querySelector('[data-view="trips"]').classList.add('active');
+  loadTrips();
+});
+
+document.getElementById('btn-edit-trip-detail').addEventListener('click', () => editTrip(currentTripId));
+
+document.getElementById('btn-export-pdf').addEventListener('click', () => window.print());
+
+async function streamItinerary(tripId) {
+  streamingActive = true;
+  document.getElementById('btn-generate-itinerary').disabled = true;
+  document.getElementById('btn-export-pdf').style.display = 'none';
+  document.getElementById('itinerary-placeholder').style.display = 'none';
+  document.getElementById('itinerary-status-badge').innerHTML = '<span class="badge bg-primary">Generating…</span>';
+
+  const thinkingEl = document.getElementById('itinerary-thinking');
+  const contentEl = document.getElementById('itinerary-content');
+  contentEl.style.display = 'none';
+  contentEl.innerHTML = '';
+
+  thinkingEl.style.display = 'flex';
+  document.getElementById('thinking-msg').textContent = 'Connecting to Claude AI…';
+
+  let rawText = '';
+
+  try {
+    const response = await fetch(`/api/trips/${tripId}/generate-itinerary`);
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let evt;
+        try { evt = JSON.parse(line.slice(6)); } catch { continue; }
+
+        if (evt.type === 'status' || evt.type === 'thinking') {
+          document.getElementById('thinking-msg').textContent = evt.message;
+
+        } else if (evt.type === 'text_start') {
+          thinkingEl.style.display = 'none';
+          contentEl.style.display = '';
+          contentEl.classList.add('streaming-cursor');
+
+        } else if (evt.type === 'text') {
+          rawText += evt.content;
+          // Lightweight live preview: render every ~200 chars to avoid jank
+          if (rawText.length % 200 < evt.content.length) {
+            contentEl.innerHTML = marked.parse(rawText);
+          }
+
+        } else if (evt.type === 'done') {
+          contentEl.classList.remove('streaming-cursor');
+          contentEl.innerHTML = marked.parse(rawText);
+          applyItineraryStyles(contentEl);
+          thinkingEl.style.display = 'none';
+          document.getElementById('itinerary-status-badge').innerHTML = '<span class="badge bg-success">Saved</span>';
+          document.getElementById('btn-generate-itinerary').disabled = false;
+          document.getElementById('btn-export-pdf').style.display = '';
+          streamingActive = false;
+          toast('Itinerary generated and saved!', 'success');
+
+        } else if (evt.type === 'error') {
+          thinkingEl.style.display = 'none';
+          contentEl.style.display = '';
+          contentEl.innerHTML = `<div class="alert alert-danger mt-2"><i class="fa-solid fa-circle-exclamation me-2"></i>${esc(evt.message)}</div>`;
+          document.getElementById('itinerary-status-badge').innerHTML = '<span class="badge bg-danger">Error</span>';
+          document.getElementById('btn-generate-itinerary').disabled = false;
+          streamingActive = false;
+        }
+      }
+    }
+  } catch(e) {
+    document.getElementById('itinerary-thinking').style.display = 'none';
+    contentEl.style.display = '';
+    contentEl.innerHTML = `<div class="alert alert-danger mt-2"><i class="fa-solid fa-circle-exclamation me-2"></i>${esc(e.message)}</div>`;
+    document.getElementById('itinerary-status-badge').innerHTML = '<span class="badge bg-danger">Error</span>';
+    document.getElementById('btn-generate-itinerary').disabled = false;
+    streamingActive = false;
+    toast('Streaming error: ' + e.message, 'danger');
+  }
+}
+
+// ─────────────────────────────────────────────
+// Delete confirm
+// ─────────────────────────────────────────────
+document.getElementById('btn-confirm-delete').addEventListener('click', async () => {
+  deleteModal.hide();
+  if (deleteCallback) await deleteCallback();
+  deleteCallback = null;
+});
+
+// ─────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────
+loadDashboard();
+</script>
+</body>
+</html>
