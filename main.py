@@ -60,6 +60,7 @@ Local customs, safety, currency, language, transport apps, SIM cards, etc.
 Table or list of major costs: flights, accommodation per night, meals/day, activities, transport.
 
 Guidelines:
+- If REAL FLIGHT DATA is provided above the day breakdown, use those exact flight numbers, times, carriers, and prices in the ✈️ Getting There section. Do NOT invent alternative flights when real data is given.
 - Weather emoji: ☀️ sunny · 🌤️ partly cloudy · ⛅ mixed · 🌥️ overcast · 🌦️ light rain · 🌧️ rainy · 🌩️ storms · ❄️ cold/snow · 🌫️ fog · 🌬️ windy
 - Include hidden gems alongside famous attractions
 - Realistic travel times between locations
@@ -150,43 +151,70 @@ def _trip_dict(t: Trip, include_customer: bool = True) -> dict:
 
 def _stream_itinerary(trip_data: dict, api_key: str):
     """Synchronous generator that streams an itinerary from Claude via SSE."""
+    from flights import search_flights
+
     client = anthropic.Anthropic(api_key=api_key)
     full_content = ""
 
+    # ── Step 1: fetch real flight data ───────────────────────────────────────
+    flight_block = ""
+    if trip_data.get("start_date"):
+        yield f"data: {json.dumps({'type': 'status', 'message': '✈️ Searching for real flights...'})}\n\n"
+        try:
+            flight_block = search_flights(
+                origin_city=trip_data["departure_city"],
+                destination=trip_data["destination"],
+                departure_date=trip_data["start_date"],
+            ) or ""
+        except Exception:
+            flight_block = ""
+        if flight_block:
+            yield f"data: {json.dumps({'type': 'status', 'message': '✈️ Live flight data retrieved! Building itinerary...'})}\n\n"
+        else:
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Connecting to Claude AI...'})}\n\n"
+    else:
+        yield f"data: {json.dumps({'type': 'status', 'message': 'Connecting to Claude AI...'})}\n\n"
+
+    # ── Step 2: build prompt ──────────────────────────────────────────────────
     start_date_line = (
         f"**Travel Dates:** Starting {trip_data['start_date']}\n"
-        if trip_data.get("start_date")
-        else ""
+        if trip_data.get("start_date") else ""
     )
     budget_type_label = "per person" if trip_data.get("budget_type") == "per_person" else "total overall"
     budget_line = (
         f"**Budget:** {trip_data['budget']} ({budget_type_label})\n"
-        if trip_data.get("budget")
-        else ""
+        if trip_data.get("budget") else ""
     )
     notes_line = (
         f"**Special Requests:** {trip_data['notes']}\n"
-        if trip_data.get("notes")
-        else ""
+        if trip_data.get("notes") else ""
+    )
+    flight_section = f"\n\n{flight_block}\n\n" if flight_block else ""
+
+    no_date_note = (
+        "\nNote: No start date provided — use typical seasonal weather patterns.\n"
+        if not trip_data.get("start_date") else ""
     )
 
     user_prompt = (
-        f"Please create a detailed {trip_data['num_days']}-day travel itinerary for the following trip:\n\n"
+        f"Please create a detailed {trip_data['num_days']}-day travel itinerary for:\n\n"
         f"**Departure:** {trip_data['departure_city']}, {trip_data['departure_country']}\n"
         f"**Destination:** {trip_data['destination']}\n"
         f"**Duration:** {trip_data['num_days']} days\n"
         f"{start_date_line}"
         f"{budget_line}"
-        f"{notes_line}\n"
-        f"Follow the exact structure from your instructions. Ensure all {trip_data['num_days']} days are covered "
-        f"with Morning / Afternoon / Evening sections. Include realistic weather analysis for {trip_data['destination']} "
+        f"{notes_line}"
+        f"{no_date_note}"
+        f"{flight_section}"
+        f"Follow the exact structure from your instructions. Cover all {trip_data['num_days']} days with "
+        f"Morning / Afternoon / Evening sections. "
+        f"{'Use the real flight data above exactly as provided in the Getting There section.' if flight_block else 'Include realistic flight options in the Getting There section.'} "
+        f"Include weather analysis for {trip_data['destination']} "
         f"{'in ' + trip_data['start_date'] if trip_data.get('start_date') else 'based on typical seasonal patterns'}. "
         "Make it inspiring, detailed, and completely practical!"
     )
 
     try:
-        yield f"data: {json.dumps({'type': 'status', 'message': 'Connecting to Claude AI...'})}\n\n"
-
         with client.messages.stream(
             model="claude-opus-4-7",
             max_tokens=8192,

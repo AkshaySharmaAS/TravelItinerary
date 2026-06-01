@@ -4,3 +4,4 @@ anthropic>=0.49.0
 sqlalchemy>=2.0.0
 python-dotenv>=1.0.0
 psycopg2-binary>=2.9.0
+amadeus>=8.1.0
