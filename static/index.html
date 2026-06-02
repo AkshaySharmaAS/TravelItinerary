@@ -163,20 +163,127 @@
     /* ════════════════════════════════════════════════════════
        Print / PDF
     ════════════════════════════════════════════════════════ */
+    @page {
+      size: A4 portrait;
+      margin: 18mm 16mm 22mm;
+    }
+
     @media print {
+      /* ── Hide UI chrome ── */
       #sidebar, .mobile-bar, .sidebar-backdrop,
-      #btn-generate, #btn-export-pdf, #btn-edit-td,
-      .topbar .d-flex, #itinerary-status-badge, .review-panel { display: none !important; }
-      body { background: #fff !important; }
-      #main { margin-left: 0 !important; padding: 12px !important; }
+      .topbar, #itinerary-status-badge, .review-panel,
+      #itin-placeholder, #itin-thinking { display: none !important; }
+
+      html, body { background: #fff !important; font-size: 10.5pt; color: #111; }
+      #main { margin-left: 0 !important; padding: 0 !important; }
+
+      /* Show only trip detail */
       .view { display: none !important; }
       #view-trip-detail { display: block !important; }
-      .itinerary-wrap { box-shadow: none !important; padding: 0 !important; }
-      .itin-day { box-shadow: 0 0 0 1px #dee2e6 !important; break-inside: avoid; page-break-inside: avoid; }
-      .itin-day-hdr, .t-morning, .t-afternoon, .t-evening, .itin-weather { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      #print-hdr { display: block !important; text-align: center; padding-bottom: 14px; border-bottom: 2px solid #1e3c72; margin-bottom: 18px; }
-      #print-hdr h2 { color: #1e3c72; font-size: 1.4rem; margin: 0 0 4px; }
-      #print-hdr p  { color: #6c757d; margin: 0; font-size: .85rem; }
+
+      /* ── Print header ── */
+      #print-hdr {
+        display: block !important;
+        text-align: center;
+        padding-bottom: 14px;
+        border-bottom: 3px solid #1e3c72;
+        margin-bottom: 18px;
+      }
+      #print-hdr .ph-brand {
+        font-size: 7.5pt; color: #7b93c8;
+        text-transform: uppercase; letter-spacing: 1.4px;
+        font-weight: 700; margin-bottom: 6px;
+      }
+      #print-hdr h2 { color: #1e3c72; font-size: 18pt; font-weight: 800; margin: 0 0 5px; }
+      #print-hdr .ph-meta { color: #555; margin: 0; font-size: 9pt; }
+      #print-hdr .ph-customer { color: #374151; margin: 3px 0 0; font-size: 8.5pt; font-weight: 600; }
+
+      /* ── Trip info + customer cards ── */
+      .row.g-3.mb-4 {
+        display: flex !important;
+        gap: 12px;
+        margin-bottom: 16px !important;
+      }
+      .row.g-3.mb-4 > div { flex: 1 !important; padding: 0 !important; width: auto !important; max-width: none !important; }
+      .table-card {
+        box-shadow: none !important;
+        border: 1px solid #dde3ed !important;
+        border-radius: 7px !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .trip-info-item .lbl { font-size: 7pt; }
+      .trip-info-item .val { font-size: 9pt; }
+      .badge-s { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+      /* ── Itinerary wrapper ── */
+      .itinerary-wrap {
+        box-shadow: none !important;
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+      }
+      .itinerary-wrap > .d-flex { margin-bottom: 10pt !important; }
+      .itinerary-wrap > .d-flex h5 { font-size: 11pt !important; }
+      #itinerary-content { display: block !important; }
+      #itinerary-content > h1 { font-size: 13.5pt; border-bottom-color: #1e3c72 !important; padding-bottom: 5pt; }
+
+      /* ── Day cards ── */
+      .itin-day {
+        box-shadow: none !important;
+        border: 1px solid #c8d0e0 !important;
+        border-radius: 8px !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        margin: 10pt 0;
+      }
+      .itin-day-hdr {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        padding: 10px 18px !important;
+        border-radius: 7px 7px 0 0 !important;
+      }
+      .itin-day-hdr h2 { font-size: 10.5pt !important; }
+      .itin-day-body { padding: 11px 18px !important; }
+      .itin-day-body h3 { font-size: 8pt !important; break-after: avoid; page-break-after: avoid; }
+
+      /* ── Time-slot & callout colours ── */
+      .t-morning, .t-afternoon, .t-evening, .t-night, .t-other,
+      .itin-weather, .itin-tip {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .t-morning   { background: #fff5eb !important; border-left: 4px solid #f97316 !important; }
+      .t-afternoon { background: #eff6ff !important; border-left: 4px solid #3b82f6 !important; }
+      .t-evening   { background: #f5f3ff !important; border-left: 4px solid #8b5cf6 !important; }
+      .t-night     { background: #f1f3f5 !important; border-left: 4px solid #64748b !important; }
+      .t-other     { background: #f8f9fa !important; border-left: 4px solid #9ca3af !important; }
+      .itin-weather { background: #ecfdf5 !important; border-color: #bbf7d0 !important; }
+      .itin-tip    { background: #fffbeb !important; }
+
+      /* ── Section headings ── */
+      .itin-sh {
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        font-size: 10pt !important;
+        break-after: avoid; page-break-after: avoid;
+        margin: 12pt 0 5pt !important;
+      }
+
+      /* ── Body text ── */
+      #itinerary-content li { font-size: 9pt; line-height: 1.65; }
+      #itinerary-content p  { font-size: 9pt; line-height: 1.65; }
+
+      /* ── Print footer ── */
+      #print-footer {
+        display: block !important;
+        margin-top: 20pt;
+        padding-top: 8pt;
+        border-top: 1px solid #dee2e6;
+        text-align: center;
+        font-size: 7.5pt;
+        color: #aaa;
+      }
     }
 
     /* ════════════════════════════════════════════════════════
@@ -341,8 +448,10 @@
   <!-- ── Trip Detail ── -->
   <div class="view" id="view-trip-detail">
     <div id="print-hdr" style="display:none">
+      <div class="ph-brand"><i class="fa-solid fa-plane-departure"></i> Travel Agent CRM</div>
       <h2 id="print-trip-name"></h2>
-      <p id="print-trip-meta"></p>
+      <p class="ph-meta" id="print-trip-meta"></p>
+      <p class="ph-customer" id="print-trip-customer"></p>
     </div>
     <div class="topbar">
       <div class="d-flex align-items-center gap-2">
@@ -421,6 +530,9 @@
         <a onclick="document.getElementById('btn-open-login').click()">Sign in as an agent</a> to review this itinerary.
       </div>
     </div>
+
+    <!-- Print footer — visible only in @media print -->
+    <div id="print-footer" style="display:none"></div>
   </div>
 
   <!-- ── Agents (admin only) ── -->
@@ -1015,7 +1127,11 @@ async function openTripDetail(id) {
     document.getElementById('print-trip-name').textContent = t.destination;
     document.getElementById('print-trip-meta').textContent =
       `${t.departure_city}, ${t.departure_country} · ${t.num_days} days`+
-      (t.start_date?` · From ${t.start_date}`:'')+(t.budget?` · Budget: ${t.budget} ${t.budget_type==='per_person'?'p.p.':'total'}`:'');
+      (t.start_date?` · Departing ${t.start_date}`:'')+(t.budget?` · Budget: ${t.budget} ${t.budget_type==='per_person'?'p.p.':'total'}`:'');
+    document.getElementById('print-trip-customer').textContent =
+      t.customer_name ? `Traveller: ${t.customer_name}${t.customer_email?' · '+t.customer_email:''}` : '';
+    document.getElementById('print-footer').textContent =
+      `Travel Agent CRM · Printed ${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})} · Confidential`;
     const budgetVal = t.budget
       ? `${esc(t.budget)} <span class="text-muted fw-normal" style="font-size:.78rem">${t.budget_type==='per_person'?'/ person':'total'}</span>`
       : '—';
