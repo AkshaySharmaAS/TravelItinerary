@@ -163,97 +163,147 @@
     /* ════════════════════════════════════════════════════════
        Print / PDF
     ════════════════════════════════════════════════════════ */
-    @page {
-      size: A4 portrait;
-      margin: 18mm 16mm 22mm;
-    }
+    @page { size: A4 portrait; margin: 14mm 14mm 14mm; }
 
     @media print {
-      /* ── Hide UI chrome ── */
+      /* ── Hide UI chrome, custom header/footer ── */
       #sidebar, .mobile-bar, .sidebar-backdrop,
-      .topbar, #itinerary-status-badge, .review-panel,
-      #itin-placeholder, #itin-thinking { display: none !important; }
+      .topbar .d-flex:last-child, .back-btn,
+      #itinerary-status-badge, .review-panel,
+      #itin-placeholder, #itin-thinking,
+      #print-hdr, #print-footer { display: none !important; }
 
-      html, body { background: #fff !important; font-size: 10.5pt; color: #111; }
+      html, body { background: #fff !important; font-size: 10pt; color: #111; }
       #main { margin-left: 0 !important; padding: 0 !important; }
-
-      /* Show only trip detail */
       .view { display: none !important; }
       #view-trip-detail { display: block !important; }
 
-      /* ── Print header ── */
-      #print-hdr {
+      /* ── Destination title ── */
+      .topbar {
         display: block !important;
-        text-align: center;
-        padding-bottom: 14px;
         border-bottom: 3px solid #1e3c72;
-        margin-bottom: 18px;
-      }
-      #print-hdr .ph-brand {
-        font-size: 7.5pt; color: #7b93c8;
-        text-transform: uppercase; letter-spacing: 1.4px;
-        font-weight: 700; margin-bottom: 6px;
-      }
-      #print-hdr h2 { color: #1e3c72; font-size: 18pt; font-weight: 800; margin: 0 0 5px; }
-      #print-hdr .ph-meta { color: #555; margin: 0; font-size: 9pt; }
-      #print-hdr .ph-customer { color: #374151; margin: 3px 0 0; font-size: 8.5pt; font-weight: 600; }
-
-      /* ── Trip info + customer cards ── */
-      .row.g-3.mb-4 {
-        display: flex !important;
-        gap: 12px;
+        padding-bottom: 10px !important;
         margin-bottom: 16px !important;
       }
-      .row.g-3.mb-4 > div { flex: 1 !important; padding: 0 !important; width: auto !important; max-width: none !important; }
+      #trip-detail-title {
+        font-size: 19pt !important;
+        font-weight: 800 !important;
+        color: #1e3c72 !important;
+        margin: 0 !important;
+      }
+
+      /* ── Two-column info block (float, most reliable in print) ── */
+      .row.g-3.mb-4 {
+        display: block !important;
+        overflow: hidden !important;
+        margin: 0 0 14px !important;
+      }
+      .row.g-3.mb-4 > div:first-child {
+        float: left !important;
+        width: 57% !important;
+        padding: 0 10px 0 0 !important;
+      }
+      .row.g-3.mb-4 > div:last-child {
+        float: left !important;
+        width: 43% !important;
+        padding: 0 !important;
+      }
+
+      /* ── Card chrome ── */
       .table-card {
         box-shadow: none !important;
-        border: 1px solid #dde3ed !important;
-        border-radius: 7px !important;
-        break-inside: avoid;
-        page-break-inside: avoid;
+        border: 1.5px solid #c8d4ea !important;
+        border-radius: 0 !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+        height: auto !important;
       }
-      .trip-info-item .lbl { font-size: 7pt; }
-      .trip-info-item .val { font-size: 9pt; }
+      .table-card > h6 {
+        background: #1e3c72 !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        padding: 6px 12px !important;
+        margin: 0 !important;
+        font-size: 7pt !important;
+        letter-spacing: 0.9px !important;
+        text-transform: uppercase !important;
+        border-radius: 0 !important;
+      }
+
+      /* ── Trip info rows: label | value aligned columns ── */
+      .trip-info-grid { display: block !important; }
+      .trip-info-item {
+        display: block !important;
+        overflow: hidden !important;
+        padding: 5px 12px !important;
+        border-bottom: 1px solid #e9ecef !important;
+      }
+      .trip-info-item:last-child { border-bottom: none !important; }
+      .trip-info-item .lbl {
+        display: inline-block !important;
+        width: 33% !important;
+        vertical-align: top !important;
+        font-size: 7pt !important;
+        color: #6c757d !important;
+        text-transform: uppercase !important;
+        font-weight: 700 !important;
+        letter-spacing: .5px !important;
+        padding-top: 1px !important;
+      }
+      .trip-info-item .val {
+        display: inline-block !important;
+        width: 65% !important;
+        vertical-align: top !important;
+        font-size: 9pt !important;
+        font-weight: 600 !important;
+        color: #1a2236 !important;
+      }
+
+      /* ── Customer card ── */
+      #trip-customer-info { padding: 10px 12px !important; }
+      #trip-customer-info .d-flex { display: block !important; }
+      #trip-customer-info .d-flex > div:first-child { display: none !important; }
+      #trip-customer-info .fw-bold { font-size: 10.5pt !important; margin-bottom: 3px !important; display: block; }
+      #trip-customer-info .text-muted { font-size: 8.5pt !important; }
+
       .badge-s { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
       /* ── Itinerary wrapper ── */
       .itinerary-wrap {
+        clear: both !important;
         box-shadow: none !important;
         padding: 0 !important;
         border: none !important;
         background: transparent !important;
+        margin-top: 14px !important;
       }
-      .itinerary-wrap > .d-flex { margin-bottom: 10pt !important; }
+      .itinerary-wrap > .d-flex { margin-bottom: 8pt !important; }
       .itinerary-wrap > .d-flex h5 { font-size: 11pt !important; }
       #itinerary-content { display: block !important; }
-      #itinerary-content > h1 { font-size: 13.5pt; border-bottom-color: #1e3c72 !important; padding-bottom: 5pt; }
+      #itinerary-content > h1 { font-size: 13pt !important; border-bottom-color: #1e3c72 !important; }
 
       /* ── Day cards ── */
       .itin-day {
         box-shadow: none !important;
-        border: 1px solid #c8d0e0 !important;
-        border-radius: 8px !important;
+        border: 1.5px solid #1e3c72 !important;
+        border-radius: 0 !important;
         break-inside: avoid;
         page-break-inside: avoid;
         margin: 10pt 0;
       }
       .itin-day-hdr {
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        padding: 10px 18px !important;
-        border-radius: 7px 7px 0 0 !important;
+        background: #1e3c72 !important;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        padding: 9px 16px !important;
+        border-radius: 0 !important;
       }
-      .itin-day-hdr h2 { font-size: 10.5pt !important; }
-      .itin-day-body { padding: 11px 18px !important; }
+      .itin-day-hdr h2 { font-size: 10.5pt !important; color: #fff !important; }
+      .itin-day-body { padding: 10px 16px !important; }
       .itin-day-body h3 { font-size: 8pt !important; break-after: avoid; page-break-after: avoid; }
 
       /* ── Time-slot & callout colours ── */
       .t-morning, .t-afternoon, .t-evening, .t-night, .t-other,
-      .itin-weather, .itin-tip {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
+      .itin-weather, .itin-tip { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .t-morning   { background: #fff5eb !important; border-left: 4px solid #f97316 !important; }
       .t-afternoon { background: #eff6ff !important; border-left: 4px solid #3b82f6 !important; }
       .t-evening   { background: #f5f3ff !important; border-left: 4px solid #8b5cf6 !important; }
@@ -267,23 +317,12 @@
         -webkit-print-color-adjust: exact; print-color-adjust: exact;
         font-size: 10pt !important;
         break-after: avoid; page-break-after: avoid;
-        margin: 12pt 0 5pt !important;
+        margin: 10pt 0 4pt !important;
       }
 
       /* ── Body text ── */
-      #itinerary-content li { font-size: 9pt; line-height: 1.65; }
-      #itinerary-content p  { font-size: 9pt; line-height: 1.65; }
-
-      /* ── Print footer ── */
-      #print-footer {
-        display: block !important;
-        margin-top: 20pt;
-        padding-top: 8pt;
-        border-top: 1px solid #dee2e6;
-        text-align: center;
-        font-size: 7.5pt;
-        color: #aaa;
-      }
+      #itinerary-content li { font-size: 9pt; line-height: 1.6; }
+      #itinerary-content p  { font-size: 9pt; line-height: 1.6; }
     }
 
     /* ════════════════════════════════════════════════════════
