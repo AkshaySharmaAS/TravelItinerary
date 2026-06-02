@@ -1033,7 +1033,7 @@ async function openTripDetail(id) {
         </div>`
       : '<p class="text-muted mb-0">No customer data</p>';
     if (t.itinerary) {
-      showItinerary(t.itinerary);
+      showItinerary(t.itinerary, t.itinerary_generated_at);
       currentTripReview = t.review;
       renderReviewPanel(t.review);
     }
@@ -1051,19 +1051,37 @@ async function refreshTripReview() {
 // ─────────────────────────────────────────────
 // Review panel
 // ─────────────────────────────────────────────
+function fmtDT(iso) {
+  if (!iso) return '';
+  try { return new Date(iso).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }); }
+  catch(_) { return iso.slice(0,16).replace('T',' '); }
+}
+
 function renderReviewPanel(review) {
   const panel = document.getElementById('review-panel');
   panel.style.display = '';
   const existingEl = document.getElementById('existing-review');
   if (review) {
     const cls = review.status === 'accepted' ? 'rv-accepted' : 'rv-changes';
+    const comments = review.comments || [];
+    const historyHtml = comments.length
+      ? `<div class="mt-2" style="border-top:1px solid rgba(0,0,0,.08);padding-top:8px">
+           <div class="text-muted mb-2" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.4px">Comment History</div>
+           ${comments.map(c => `
+             <div class="mb-2" style="font-size:.86rem">
+               <span class="fw-semibold">${esc(c.agent||'Agent')}</span>
+               ${c.at ? `<span class="text-muted ms-2" style="font-size:.75rem">${fmtDT(c.at)}</span>` : ''}
+               <div class="mt-1" style="color:#374151">${esc(c.text)}</div>
+             </div>`).join('')}
+         </div>`
+      : '';
     existingEl.innerHTML = `
       <div class="review-existing ${cls} mb-3">
         <div class="d-flex align-items-center gap-2 mb-1">
           ${reviewBadge(review.status)}
-          <span class="text-muted" style="font-size:.78rem">by ${esc(review.agent_name||'Agent')} · ${new Date(review.reviewed_at).toLocaleDateString()}</span>
+          <span class="text-muted" style="font-size:.78rem">Last updated ${fmtDT(review.reviewed_at)}</span>
         </div>
-        ${review.comment ? `<p class="mb-0 mt-1" style="font-size:.88rem">${esc(review.comment)}</p>` : ''}
+        ${historyHtml}
       </div>`;
   } else {
     existingEl.innerHTML = '';
@@ -1072,15 +1090,14 @@ function renderReviewPanel(review) {
   const loggedIn = !!currentUser;
   document.getElementById('review-form-wrap').style.display = loggedIn ? '' : 'none';
   document.getElementById('review-login-prompt').style.display = loggedIn ? 'none' : '';
-  if (review && loggedIn) {
-    document.getElementById('review-status').value = review.status;
-    document.getElementById('review-comment').value = review.comment || '';
-  } else if (loggedIn) {
-    document.getElementById('review-status').value = 'accepted';
+  if (loggedIn) {
+    // Always reset the form so agent writes a fresh comment (history is preserved server-side)
+    document.getElementById('review-status').value = review ? review.status : 'accepted';
     document.getElementById('review-comment').value = '';
   }
-  // Show re-generate button only when there are suggested changes with a comment
-  const showRegen = loggedIn && review && review.status === 'changes_suggested' && review.comment;
+  // Show re-generate button only when changes were suggested and there is at least one comment
+  const hasComments = review && review.comments && review.comments.length > 0;
+  const showRegen = loggedIn && review && review.status === 'changes_suggested' && hasComments;
   document.getElementById('btn-regen-with-changes').style.display = showRegen ? '' : 'none';
 }
 
@@ -1132,14 +1149,16 @@ function applyItinStyles(el) {
   el.querySelectorAll('blockquote').forEach(bq => bq.classList.add('itin-tip'));
 }
 
-function showItinerary(markdown) {
+function showItinerary(markdown, generatedAt) {
   document.getElementById('itin-placeholder').style.display = 'none';
   document.getElementById('itin-thinking').style.display = 'none';
   const el = document.getElementById('itinerary-content');
   el.style.display = ''; el.classList.remove('cursor');
   el.innerHTML = marked.parse(markdown);
   applyItinStyles(el);
-  document.getElementById('itinerary-status-badge').innerHTML = '<span class="badge bg-success">Saved</span>';
+  const tsLabel = generatedAt ? ` · ${fmtDT(generatedAt)}` : '';
+  document.getElementById('itinerary-status-badge').innerHTML =
+    `<span class="badge bg-success">Saved${tsLabel}</span>`;
   document.getElementById('btn-export-pdf').style.display = '';
 }
 
@@ -1202,12 +1221,21 @@ async function streamItinerary(tripId, withReview = false) {
           contentEl.innerHTML = marked.parse(raw);
           applyItinStyles(contentEl);
           thinkEl.style.display = 'none';
-          document.getElementById('itinerary-status-badge').innerHTML = '<span class="badge bg-success">Saved</span>';
           document.getElementById('btn-generate').disabled = false;
           document.getElementById('btn-export-pdf').style.display = '';
           streaming = false;
-          currentTripReview = null;
-          renderReviewPanel(null);
+          // Refresh trip to get accurate generated_at timestamp and preserved review
+          try {
+            const fresh = await api('GET', `/trips/${tripId}`);
+            const tsLabel = fresh.itinerary_generated_at ? ` · ${fmtDT(fresh.itinerary_generated_at)}` : '';
+            document.getElementById('itinerary-status-badge').innerHTML =
+              `<span class="badge bg-success">Saved${tsLabel}</span>`;
+            currentTripReview = fresh.review;
+            renderReviewPanel(fresh.review);
+          } catch(_) {
+            document.getElementById('itinerary-status-badge').innerHTML = '<span class="badge bg-success">Saved</span>';
+            renderReviewPanel(null);
+          }
           toast('Itinerary generated and saved!','success');
         } else if (ev.type==='error') {
           thinkEl.style.display = 'none'; contentEl.style.display = '';

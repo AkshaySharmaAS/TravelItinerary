@@ -18,6 +18,26 @@ create_tables()
 migrate_db()
 seed_admin()
 
+
+# ── Comment history helpers ───────────────────────────────────────────────────
+
+def _load_comments(raw: Optional[str]) -> list:
+    """Parse comment field as JSON list; fall back gracefully for legacy plain strings."""
+    if not raw:
+        return []
+    try:
+        parsed = json.loads(raw)
+        if isinstance(parsed, list):
+            return parsed
+    except (json.JSONDecodeError, ValueError):
+        pass
+    # Legacy plain-string comment — wrap so old data keeps working
+    return [{"agent": "Agent", "text": raw, "at": ""}]
+
+
+def _save_comments(comments: list) -> str:
+    return json.dumps(comments, ensure_ascii=False)
+
 app = FastAPI(title="Travel Agent CRM")
 
 SYSTEM_PROMPT = """You are an expert travel agent with decades of experience planning international trips. \
@@ -198,11 +218,18 @@ def _trip_dict(t: Trip, include_customer: bool = True) -> dict:
     if include_customer and t.customer:
         d["customer_name"] = t.customer.name
         d["customer_email"] = t.customer.email
+    d["itinerary_generated_at"] = t.itinerary.generated_at.isoformat() if t.itinerary else None
     if t.review:
+        comments = _load_comments(t.review.comment)
+        # Format all comment entries for the Claude prompt
+        all_notes = "\n".join(
+            f"[{c.get('at', '')[:16]}] {c.get('agent', 'Agent')}: {c['text']}"
+            for c in comments if c.get("text")
+        )
         d["review"] = {
             "status": t.review.status,
-            "comment": t.review.comment,
-            "agent_id": t.review.agent_id,
+            "comment": all_notes,        # used by Claude (all history)
+            "comments": comments,        # used by UI (full list with timestamps)
             "agent_name": t.review.agent.name if t.review.agent else None,
             "reviewed_at": t.review.reviewed_at.isoformat(),
         }
@@ -522,9 +549,18 @@ def submit_review(
         raise HTTPException(status_code=400, detail="status must be 'accepted' or 'changes_suggested'")
 
     existing = db.query(ItineraryReview).filter(ItineraryReview.trip_id == trip_id).first()
+    # Append new comment to history; never overwrite previous entries
+    comments = _load_comments(existing.comment if existing else None)
+    if payload.comment and payload.comment.strip():
+        comments.append({
+            "agent": current_user.name,
+            "text": payload.comment.strip(),
+            "at": datetime.utcnow().isoformat(),
+        })
+    comment_json = _save_comments(comments) if comments else None
     if existing:
         existing.status = payload.status
-        existing.comment = payload.comment
+        existing.comment = comment_json
         existing.agent_id = current_user.id
         existing.reviewed_at = datetime.utcnow()
     else:
@@ -532,7 +568,7 @@ def submit_review(
             trip_id=trip_id,
             agent_id=current_user.id,
             status=payload.status,
-            comment=payload.comment,
+            comment=comment_json,
         ))
     db.commit()
     return _trip_dict(db.query(Trip).filter(Trip.id == trip_id).first())
