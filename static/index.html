@@ -4,160 +4,304 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Travel Agent CRM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
   <style>
-    :root { --sidebar-w: 240px; --mobile-bar: 56px; }
-    *, *::before, *::after { box-sizing: border-box; }
-    body { min-height: 100vh; background: #f4f6fb; font-family: 'Segoe UI', system-ui, sans-serif; }
-
-    /* ── Mobile top bar ───────────────────────────────────────────────────── */
-    .mobile-bar {
-      display: none;
-      position: fixed; top: 0; left: 0; right: 0; height: var(--mobile-bar);
-      background: linear-gradient(90deg, #1a2236, #243155);
-      z-index: 200; align-items: center; padding: 0 14px; gap: 12px;
+    /* ── Design tokens ──────────────────────────────────────────────────── */
+    :root {
+      --sw: 260px;
+      --mob: 58px;
+      --navy:   #0d1b38;
+      --navy2:  #16274d;
+      --navy3:  #1e3260;
+      --accent: #3b82f6;
+      --accent-d:#2563eb;
+      --accent-bg:rgba(59,130,246,.1);
+      --green:  #10b981;
+      --amber:  #f59e0b;
+      --red:    #ef4444;
+      --violet: #8b5cf6;
+      --bg:     #eef1f8;
+      --card:   #ffffff;
+      --bdr:    #e2e8f2;
+      --bdr-lt: #edf1f7;
+      --text:   #0f172a;
+      --t2:     #475569;
+      --t3:     #94a3b8;
+      --sh:     0 1px 3px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.06);
+      --sh-hv:  0 2px 8px rgba(0,0,0,.07), 0 12px 28px rgba(0,0,0,.09);
+      --r:      14px;
+      --r-sm:   9px;
     }
-    .mobile-bar .brand-txt { color: #fff; font-weight: 700; font-size: 1rem; flex: 1; }
-    .mobile-bar .brand-txt i { color: #4ea8ff; margin-right: 6px; }
-    .hamburger { background: none; border: none; color: rgba(255,255,255,.9); font-size: 1.35rem; cursor: pointer; padding: 4px 6px; line-height: 1; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      min-height: 100vh; background: var(--bg);
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: .9375rem; color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
 
-    /* ── Sidebar ──────────────────────────────────────────────────────────── */
+    /* ── Mobile top bar ─────────────────────────────────────────────────── */
+    .mobile-bar {
+      display: none; position: fixed; top: 0; left: 0; right: 0;
+      height: var(--mob); background: var(--navy);
+      z-index: 200; align-items: center; padding: 0 16px; gap: 12px;
+      box-shadow: 0 2px 16px rgba(0,0,0,.25);
+    }
+    .mobile-bar .brand-txt { color: #fff; font-weight: 700; font-size: .95rem; flex: 1; letter-spacing: -.01em; }
+    .mobile-bar .brand-txt i { color: #60a5fa; margin-right: 7px; }
+    .hamburger { background: none; border: none; color: rgba(255,255,255,.8); font-size: 1.3rem; cursor: pointer; padding: 6px 8px; border-radius: 7px; transition: background .15s; }
+    .hamburger:hover { background: rgba(255,255,255,.1); }
+
+    /* ── Sidebar ────────────────────────────────────────────────────────── */
     #sidebar {
-      width: var(--sidebar-w); min-height: 100vh;
-      background: linear-gradient(180deg, #1a2236 0%, #243155 100%);
+      width: var(--sw); min-height: 100vh; background: var(--navy);
       position: fixed; left: 0; top: 0;
       display: flex; flex-direction: column; z-index: 150;
-      transition: transform .28s ease;
+      transition: transform .28s cubic-bezier(.4,0,.2,1);
+      box-shadow: 2px 0 24px rgba(0,0,0,.22);
     }
-    #sidebar .brand { padding: 22px 20px 14px; color: #fff; font-size: 1.05rem; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,.1); }
-    #sidebar .brand i { color: #4ea8ff; margin-right: 8px; }
-    #sidebar nav { flex: 1; padding: 10px 0; }
-    #sidebar nav .nav-link { color: rgba(255,255,255,.6); padding: 10px 20px; font-size: .9rem; display: flex; align-items: center; gap: 10px; border-left: 3px solid transparent; transition: all .18s; }
-    #sidebar nav .nav-link:hover, #sidebar nav .nav-link.active { color: #fff; background: rgba(255,255,255,.08); border-left-color: #4ea8ff; }
-    #sidebar nav .nav-link i { width: 18px; text-align: center; }
+    #sidebar .brand {
+      padding: 22px 18px 18px; border-bottom: 1px solid rgba(255,255,255,.06);
+      display: flex; align-items: center; gap: 12px;
+    }
+    #sidebar .brand .b-icon {
+      width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--accent) 0%, #6366f1 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .95rem; color: #fff;
+      box-shadow: 0 4px 14px rgba(59,130,246,.45);
+    }
+    #sidebar .brand .b-text { flex: 1; overflow: hidden; }
+    #sidebar .brand .b-name { display: block; color: #fff; font-size: .93rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.2; }
+    #sidebar .brand .b-sub  { display: block; color: rgba(255,255,255,.28); font-size: .65rem; text-transform: uppercase; letter-spacing: .95px; margin-top: 3px; }
+    #sidebar nav { flex: 1; padding: 10px 10px; overflow-y: auto; }
+    .nav-section-lbl {
+      font-size: .63rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .95px; color: rgba(255,255,255,.18);
+      padding: 14px 14px 5px; display: block;
+    }
+    #sidebar nav .nav-link {
+      color: rgba(255,255,255,.5); padding: 9.5px 14px;
+      font-size: .875rem; font-weight: 500;
+      display: flex; align-items: center; gap: 10px;
+      border-radius: 9px; margin-bottom: 2px;
+      transition: all .16s ease; border: none; outline: none;
+    }
+    #sidebar nav .nav-link i { width: 18px; text-align: center; font-size: .88rem; transition: color .16s; }
+    #sidebar nav .nav-link:hover { color: rgba(255,255,255,.82); background: rgba(255,255,255,.07); }
+    #sidebar nav .nav-link.active {
+      color: #fff; font-weight: 600;
+      background: rgba(59,130,246,.18);
+      box-shadow: inset 0 0 0 1px rgba(59,130,246,.28);
+    }
+    #sidebar nav .nav-link.active i { color: #93c5fd; }
 
-    /* Sidebar footer — sign-in or user info */
-    .sidebar-footer { padding: 14px 16px; border-top: 1px solid rgba(255,255,255,.1); }
+    .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 99; backdrop-filter: blur(2px); }
 
-    /* When not logged in */
+    .sidebar-footer { padding: 12px; border-top: 1px solid rgba(255,255,255,.06); }
     .sidebar-footer .signin-btn {
-      width: 100%; background: rgba(78,168,255,.15); border: 1px solid rgba(78,168,255,.35);
-      color: #7ec8ff; border-radius: 8px; padding: 9px 14px; font-size: .86rem;
-      font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
+      width: 100%; background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.22);
+      color: #93c5fd; border-radius: 9px; padding: 10px 14px; font-size: .84rem;
+      font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 9px;
       transition: all .18s;
     }
-    .sidebar-footer .signin-btn:hover { background: rgba(78,168,255,.28); color: #fff; }
-
-    /* When logged in */
+    .sidebar-footer .signin-btn:hover { background: rgba(59,130,246,.2); color: #bfdbfe; border-color: rgba(59,130,246,.38); }
     .sidebar-user { display: flex; align-items: center; gap: 10px; }
     .sidebar-user .avatar {
-      width: 34px; height: 34px; border-radius: 50%; background: #4ea8ff;
+      width: 34px; height: 34px; border-radius: 9px;
+      background: linear-gradient(135deg, var(--accent), #6366f1);
       display: flex; align-items: center; justify-content: center;
-      font-weight: 700; color: #fff; font-size: .9rem; flex-shrink: 0;
+      font-weight: 700; color: #fff; font-size: .85rem; flex-shrink: 0;
+      box-shadow: 0 3px 10px rgba(59,130,246,.35);
     }
     .sidebar-user .info { flex: 1; overflow: hidden; }
     .sidebar-user .info .uname { color: #fff; font-size: .82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sidebar-user .info .urole { color: rgba(255,255,255,.45); font-size: .72rem; }
-    .sidebar-user .logout-btn { background: none; border: none; color: rgba(255,255,255,.45); font-size: .95rem; cursor: pointer; padding: 4px; transition: color .15s; }
-    .sidebar-user .logout-btn:hover { color: #ff6b6b; }
+    .sidebar-user .info .urole { color: rgba(255,255,255,.3); font-size: .69rem; text-transform: capitalize; letter-spacing: .2px; }
+    .sidebar-user .logout-btn { background: none; border: none; color: rgba(255,255,255,.3); font-size: .9rem; cursor: pointer; padding: 5px 6px; border-radius: 6px; transition: all .15s; }
+    .sidebar-user .logout-btn:hover { color: #fca5a5; background: rgba(239,68,68,.12); }
 
-    /* Overlay backdrop */
-    .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 99; }
-
-    /* ── Main content ─────────────────────────────────────────────────────── */
-    #main { margin-left: var(--sidebar-w); padding: 28px 32px; min-height: 100vh; }
-    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; flex-wrap: wrap; gap: 10px; }
-    .topbar h1 { font-size: 1.4rem; font-weight: 700; margin: 0; color: #1a2236; }
+    /* ── Main content ───────────────────────────────────────────────────── */
+    #main { margin-left: var(--sw); padding: 28px 34px; min-height: 100vh; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 10px; }
+    .topbar h1 { font-size: 1.42rem; font-weight: 700; margin: 0; color: var(--text); letter-spacing: -.025em; }
     .view { display: none; }
     .view.active { display: block; }
 
-    /* ── Stat cards ───────────────────────────────────────────────────────── */
-    .stat-card { background: #fff; border-radius: 14px; padding: 20px 22px; box-shadow: 0 1px 6px rgba(0,0,0,.07); height: 100%; }
-    .stat-card .icon { width: 44px; height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; margin-bottom: 12px; }
-    .stat-card .value { font-size: 1.9rem; font-weight: 700; line-height: 1; color: #1a2236; }
-    .stat-card .label { color: #6c757d; font-size: .82rem; margin-top: 4px; }
+    /* ── Stat cards ─────────────────────────────────────────────────────── */
+    .stat-card {
+      background: var(--card); border-radius: var(--r);
+      padding: 20px 22px 18px; box-shadow: var(--sh); border: 1px solid var(--bdr-lt);
+      height: 100%; position: relative; overflow: hidden;
+      transition: box-shadow .2s, transform .2s; cursor: default;
+    }
+    .stat-card:hover { box-shadow: var(--sh-hv); transform: translateY(-2px); }
+    .stat-card::after {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .stat-card.sc-blue::after   { background: linear-gradient(90deg,#3b82f6,#6366f1); }
+    .stat-card.sc-green::after  { background: linear-gradient(90deg,#10b981,#34d399); }
+    .stat-card.sc-violet::after { background: linear-gradient(90deg,#8b5cf6,#a78bfa); }
+    .stat-card.sc-amber::after  { background: linear-gradient(90deg,#f59e0b,#fcd34d); }
+    .stat-card .sc-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+    .stat-card .icon { width: 44px; height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+    .sc-blue   .icon { background: rgba(59,130,246,.1);  color: var(--accent); }
+    .sc-green  .icon { background: rgba(16,185,129,.1);  color: var(--green); }
+    .sc-violet .icon { background: rgba(139,92,246,.1);  color: var(--violet); }
+    .sc-amber  .icon { background: rgba(245,158,11,.1);  color: var(--amber); }
+    .stat-card .value { font-size: 2rem; font-weight: 800; line-height: 1; color: var(--text); letter-spacing: -.04em; }
+    .stat-card .label { color: var(--t2); font-size: .8rem; font-weight: 500; margin-top: 5px; }
 
-    /* ── Table card ───────────────────────────────────────────────────────── */
-    .table-card { background: #fff; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,.07); overflow: hidden; }
-    .table-card .card-hdr { padding: 14px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; }
-    .table > :not(caption) > * > * { padding: .7rem 1rem; vertical-align: middle; }
-    th { font-size: .82rem; font-weight: 600; color: #6c757d; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
+    /* ── Content / table cards ──────────────────────────────────────────── */
+    .table-card { background: var(--card); border-radius: var(--r); box-shadow: var(--sh); overflow: hidden; border: 1px solid var(--bdr-lt); }
+    .table-card .card-hdr { padding: 15px 20px 13px; border-bottom: 1px solid var(--bdr-lt); display: flex; align-items: center; justify-content: space-between; }
+    .table-card .card-hdr .chdr-title { font-size: .9rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .table-card .card-hdr .chdr-title i { color: var(--t3); font-size: .85rem; }
 
-    /* ── Status badges ────────────────────────────────────────────────────── */
-    .badge-s { font-size: .74rem; padding: .28em .65em; border-radius: 5px; font-weight: 600; display: inline-block; white-space: nowrap; }
-    .s-planning   { background: #e8f0fe; color: #1a73e8; }
-    .s-confirmed  { background: #e6f4ea; color: #188038; }
-    .s-completed  { background: #f3e8fd; color: #7b1fa2; }
-    .s-cancelled  { background: #fce8e6; color: #c5221f; }
-    .r-accepted          { background: #e6f4ea; color: #188038; }
-    .r-changes_suggested { background: #fff3e0; color: #e65100; }
+    /* ── Tables ─────────────────────────────────────────────────────────── */
+    .table > :not(caption) > * > * { padding: .72rem 1.05rem; vertical-align: middle; }
+    th { font-size: .71rem; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .55px; white-space: nowrap; background: #f8fafd; }
+    thead.table-light th { background: #f8fafd !important; color: var(--t3) !important; }
+    tbody tr { transition: background .1s; }
+    tbody tr:hover > td { background: #f4f7ff !important; }
 
-    /* ── Trip detail ──────────────────────────────────────────────────────── */
-    .trip-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; }
-    .trip-info-item .lbl { font-size: .73rem; color: #9ca3af; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 2px; }
-    .trip-info-item .val { font-weight: 600; color: #1a2236; font-size: .93rem; }
-    .back-btn { cursor: pointer; font-size: .88rem; white-space: nowrap; }
+    /* ── Status badges ───────────────────────────────────────────────────── */
+    .badge-s {
+      font-size: .7rem; padding: .28em .72em; border-radius: 20px;
+      font-weight: 600; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+    }
+    .badge-s::before { content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .s-planning   { background: rgba(59,130,246,.1);  color: #1d4ed8; }
+    .s-planning::before  { background: var(--accent); }
+    .s-confirmed  { background: rgba(16,185,129,.1);  color: #065f46; }
+    .s-confirmed::before { background: var(--green); }
+    .s-completed  { background: rgba(139,92,246,.1);  color: #5b21b6; }
+    .s-completed::before { background: var(--violet); }
+    .s-cancelled  { background: rgba(239,68,68,.1);   color: #991b1b; }
+    .s-cancelled::before { background: var(--red); }
+    .r-accepted           { background: rgba(16,185,129,.1); color: #065f46; }
+    .r-changes_suggested  { background: rgba(245,158,11,.1);  color: #92400e; }
 
-    /* ── Status filter tabs ───────────────────────────────────────────────── */
+    /* ── Buttons ────────────────────────────────────────────────────────── */
+    .btn { font-weight: 600; letter-spacing: .01em; border-radius: 8px; }
+    .btn-primary {
+      background: var(--accent); border-color: var(--accent);
+      box-shadow: 0 1px 4px rgba(59,130,246,.3), 0 4px 12px rgba(59,130,246,.18);
+      transition: all .16s;
+    }
+    .btn-primary:hover {
+      background: var(--accent-d); border-color: var(--accent-d);
+      box-shadow: 0 2px 8px rgba(59,130,246,.4), 0 6px 18px rgba(59,130,246,.25);
+      transform: translateY(-1px);
+    }
+    .btn-primary:active { transform: none; }
+    .btn-outline-secondary {
+      border-color: var(--bdr); color: var(--t2); background: var(--card);
+      transition: all .14s;
+    }
+    .btn-outline-secondary:hover { background: var(--bg); border-color: #c0cad8; color: var(--text); }
+    .btn-sm { padding: .32rem .72rem; font-size: .8rem; }
+
+    /* ── Form controls ──────────────────────────────────────────────────── */
+    .form-control, .form-select {
+      border-color: var(--bdr); color: var(--text); border-radius: var(--r-sm);
+      font-size: .9rem; transition: border-color .15s, box-shadow .15s;
+      background-color: #fdfdfe;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,.13);
+      background: var(--card);
+    }
+    .form-label { font-weight: 600; font-size: .83rem; color: var(--t2); margin-bottom: .35rem; letter-spacing: .01em; }
+    .form-text { font-size: .78rem; color: var(--t3); }
+
+    /* ── Trip detail ────────────────────────────────────────────────────── */
+    .trip-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
+    .trip-info-item .lbl { font-size: .69rem; color: var(--t3); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 2px; font-weight: 600; }
+    .trip-info-item .val { font-weight: 600; color: var(--text); font-size: .92rem; }
+    .back-btn { cursor: pointer; font-size: .87rem; white-space: nowrap; font-weight: 500; }
+
+    /* Section card header strip */
+    .info-card-hdr {
+      font-size: .68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .85px; color: var(--t2);
+      padding: 10px 16px 9px;
+      border-bottom: 1px solid var(--bdr-lt);
+      background: #f8fafd;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .info-card-hdr i { color: var(--accent); font-size: .75rem; }
+
+    /* ── Status filter tabs ──────────────────────────────────────────────── */
     .tab-filter { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; gap: 4px; }
     .tab-filter::-webkit-scrollbar { height: 3px; }
-    .tab-filter .nav-link { font-size: .85rem; padding: .4rem .85rem; color: #495057; border-radius: 6px; white-space: nowrap; }
-    .tab-filter .nav-link.active { background: #0d6efd; color: #fff; }
+    .tab-filter .nav-link {
+      font-size: .83rem; font-weight: 500; padding: .4rem .9rem; border-radius: 20px;
+      color: var(--t2); white-space: nowrap; transition: all .14s; border: 1px solid transparent;
+    }
+    .tab-filter .nav-link:hover { color: var(--text); background: rgba(0,0,0,.04); }
+    .tab-filter .nav-link.active { background: var(--accent-bg); color: var(--accent); border-color: rgba(59,130,246,.2); font-weight: 600; }
 
-    /* ── Thinking / streaming ─────────────────────────────────────────────── */
-    .thinking-row { display: flex; align-items: center; gap: 8px; color: #6c757d; font-size: .88rem; padding: 12px 0; }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: #4ea8ff; animation: dp 1.2s ease-in-out infinite; }
+    /* ── Streaming / thinking ────────────────────────────────────────────── */
+    .thinking-row { display: flex; align-items: center; gap: 10px; color: var(--t2); font-size: .875rem; padding: 14px 0; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: dp 1.2s ease-in-out infinite; }
     .dot:nth-child(2) { animation-delay: .2s; }
     .dot:nth-child(3) { animation-delay: .4s; }
-    @keyframes dp { 0%,80%,100%{transform:scale(.7);opacity:.4}40%{transform:scale(1.2);opacity:1} }
+    @keyframes dp { 0%,80%,100%{transform:scale(.7);opacity:.35}40%{transform:scale(1.2);opacity:1} }
     .cursor::after { content: '▋'; animation: bl .7s step-end infinite; }
     @keyframes bl { 50%{opacity:0} }
 
-    /* ── Empty state ──────────────────────────────────────────────────────── */
-    .empty-state { text-align: center; padding: 50px 20px; color: #adb5bd; }
-    .empty-state i { font-size: 2.6rem; margin-bottom: 14px; display: block; }
+    /* ── Empty state ────────────────────────────────────────────────────── */
+    .empty-state { text-align: center; padding: 52px 20px; color: var(--t3); }
+    .empty-state i { font-size: 2.6rem; margin-bottom: 14px; display: block; opacity: .65; }
+    .empty-state p { font-size: .875rem; }
 
-    /* ── Review panel ─────────────────────────────────────────────────────── */
-    .review-panel { background: #fff; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,.07); padding: 20px 24px; margin-top: 20px; }
-    .review-panel h5 { font-size: .95rem; font-weight: 700; margin-bottom: 14px; }
-    .review-existing { padding: 12px 16px; border-radius: 10px; margin-bottom: 14px; }
-    .review-existing.rv-accepted { background: #e6f4ea; border-left: 4px solid #188038; }
-    .review-existing.rv-changes  { background: #fff3e0; border-left: 4px solid #e65100; }
-    .review-login-prompt { background: #f8f9fa; border: 1px dashed #dee2e6; border-radius: 10px; padding: 16px; text-align: center; color: #6c757d; font-size: .88rem; }
-    .review-login-prompt a { color: #0d6efd; cursor: pointer; }
+    /* ── Review panel ───────────────────────────────────────────────────── */
+    .review-panel {
+      background: var(--card); border-radius: var(--r);
+      box-shadow: var(--sh); border: 1px solid var(--bdr-lt);
+      padding: 22px 24px; margin-top: 20px;
+    }
+    .review-panel h5 { font-size: .92rem; font-weight: 700; margin-bottom: 16px; color: var(--text); letter-spacing: -.01em; }
+    .review-existing { padding: 13px 16px; border-radius: 10px; margin-bottom: 14px; }
+    .review-existing.rv-accepted { background: rgba(16,185,129,.07); border-left: 4px solid var(--green); }
+    .review-existing.rv-changes  { background: rgba(245,158,11,.07); border-left: 4px solid var(--amber); }
+    .review-login-prompt { background: var(--bg); border: 1px dashed var(--bdr); border-radius: 10px; padding: 20px; text-align: center; color: var(--t2); font-size: .86rem; }
+    .review-login-prompt a { color: var(--accent); cursor: pointer; font-weight: 500; }
 
     /* ════════════════════════════════════════════════════════
        Itinerary visual styles
     ════════════════════════════════════════════════════════ */
-    .itinerary-wrap { background: #fff; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,.07); padding: 24px; }
+    .itinerary-wrap { background: var(--card); border-radius: var(--r); box-shadow: var(--sh); border: 1px solid var(--bdr-lt); padding: 24px; }
     #itinerary-content .itin-sh {
-      font-size: 1.02rem; font-weight: 700; color: #1a2236;
+      font-size: 1rem; font-weight: 700; color: var(--text);
       margin: 1.8rem 0 .8rem; padding-bottom: .4rem;
-      border-bottom: 2px solid #e9ecef; display: flex; align-items: center; gap: 7px;
+      border-bottom: 2px solid var(--bdr); display: flex; align-items: center; gap: 7px;
     }
-    .itin-day { border-radius: 12px; overflow: hidden; margin: 1.6rem 0; box-shadow: 0 3px 14px rgba(0,0,0,.09); }
+    .itin-day { border-radius: 12px; overflow: hidden; margin: 1.5rem 0; box-shadow: 0 2px 12px rgba(0,0,0,.08); border: 1px solid var(--bdr-lt); }
     .itin-day-hdr { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff; padding: 14px 20px; }
     .itin-day-hdr h2 { margin: 0; font-size: 1rem; font-weight: 700; color: #fff; }
-    .itin-day-body { background: #fff; padding: 18px 20px; border: 1px solid #e9ecef; border-top: none; border-radius: 0 0 12px 12px; }
+    .itin-day-body { background: var(--card); padding: 18px 20px; border-top: none; }
     .itin-day-body h3 {
-      font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .45px;
-      padding: 6px 12px; border-radius: 6px; margin: 1.2rem 0 .6rem;
+      font-size: .79rem; font-weight: 700; text-transform: uppercase; letter-spacing: .45px;
+      padding: 6px 12px; border-radius: 6px; margin: 1.1rem 0 .6rem;
       display: inline-flex; align-items: center; gap: 5px; width: 100%;
     }
     .t-morning   { background: #fff5eb; color: #c2410c; border-left: 4px solid #f97316; }
     .t-afternoon { background: #eff6ff; color: #1d4ed8; border-left: 4px solid #3b82f6; }
     .t-evening   { background: #f5f3ff; color: #6d28d9; border-left: 4px solid #8b5cf6; }
-    .t-night     { background: #0f172a0d; color: #334155; border-left: 4px solid #64748b; }
+    .t-night     { background: #f8fafc; color: #334155; border-left: 4px solid #64748b; }
     .t-other     { background: #f8f9fa; color: #374151; border-left: 4px solid #9ca3af; }
     .itin-weather {
       background: linear-gradient(90deg,#ecfdf5,#f0fdf4); border: 1px solid #bbf7d0;
-      border-radius: 7px; padding: 8px 13px; margin: .4rem 0 .9rem;
+      border-radius: 8px; padding: 8px 14px; margin: .4rem 0 .9rem;
       color: #166534; font-size: .87rem; font-weight: 500;
     }
     .itin-tip { background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 9px 9px 0; padding: 10px 15px; margin: .9rem 0; color: #78350f; }
-    .itin-tip p { margin: 0; font-size: .88rem; }
-    #itinerary-content > h1 { font-size: 1.45rem; font-weight: 800; color: #1a2236; margin-bottom: .9rem; padding-bottom: .5rem; border-bottom: 3px solid #e9ecef; }
+    .itin-tip p { margin: 0; font-size: .87rem; }
+    #itinerary-content > h1 { font-size: 1.42rem; font-weight: 800; color: var(--text); margin-bottom: .9rem; padding-bottom: .55rem; border-bottom: 3px solid var(--bdr); letter-spacing: -.02em; }
     #itinerary-content li { margin-bottom: .3rem; line-height: 1.65; }
 
     /* ════════════════════════════════════════════════════════
@@ -166,7 +310,6 @@
     @page { size: A4 portrait; margin: 14mm 14mm 14mm; }
 
     @media print {
-      /* ── Hide UI chrome, custom header/footer ── */
       #sidebar, .mobile-bar, .sidebar-backdrop,
       .topbar .d-flex:last-child, .back-btn,
       #itinerary-status-badge, .review-panel,
@@ -178,130 +321,42 @@
       .view { display: none !important; }
       #view-trip-detail { display: block !important; }
 
-      /* ── Destination title ── */
-      .topbar {
-        display: block !important;
-        border-bottom: 3px solid #1e3c72;
-        padding-bottom: 10px !important;
-        margin-bottom: 16px !important;
-      }
-      #trip-detail-title {
-        font-size: 19pt !important;
-        font-weight: 800 !important;
-        color: #1e3c72 !important;
-        margin: 0 !important;
-      }
+      .topbar { display: block !important; border-bottom: 3px solid #1e3c72; padding-bottom: 10px !important; margin-bottom: 16px !important; }
+      #trip-detail-title { font-size: 19pt !important; font-weight: 800 !important; color: #1e3c72 !important; margin: 0 !important; }
 
-      /* ── Two-column info block (float, most reliable in print) ── */
-      .row.g-3.mb-4 {
-        display: block !important;
-        overflow: hidden !important;
-        margin: 0 0 14px !important;
-      }
-      .row.g-3.mb-4 > div:first-child {
-        float: left !important;
-        width: 57% !important;
-        padding: 0 10px 0 0 !important;
-      }
-      .row.g-3.mb-4 > div:last-child {
-        float: left !important;
-        width: 43% !important;
-        padding: 0 !important;
-      }
+      .row.g-3.mb-4 { display: block !important; overflow: hidden !important; margin: 0 0 14px !important; }
+      .row.g-3.mb-4 > div:first-child { float: left !important; width: 57% !important; padding: 0 10px 0 0 !important; }
+      .row.g-3.mb-4 > div:last-child  { float: left !important; width: 43% !important; padding: 0 !important; }
 
-      /* ── Card chrome ── */
-      .table-card {
-        box-shadow: none !important;
-        border: 1.5px solid #c8d4ea !important;
-        border-radius: 0 !important;
-        overflow: hidden !important;
-        padding: 0 !important;
-        height: auto !important;
-      }
-      .table-card > h6 {
-        background: #1e3c72 !important;
-        color: #fff !important;
-        -webkit-print-color-adjust: exact; print-color-adjust: exact;
-        padding: 6px 12px !important;
-        margin: 0 !important;
-        font-size: 7pt !important;
-        letter-spacing: 0.9px !important;
-        text-transform: uppercase !important;
-        border-radius: 0 !important;
-      }
+      .table-card { box-shadow: none !important; border: 1.5px solid #c8d4ea !important; border-radius: 0 !important; overflow: hidden !important; padding: 0 !important; height: auto !important; }
+      .info-card-hdr { background: #1e3c72 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 6px 12px !important; font-size: 7pt !important; border-radius: 0 !important; }
+      .info-card-hdr i { display: none !important; }
 
-      /* ── Trip info rows: label | value aligned columns ── */
       .trip-info-grid { display: block !important; }
-      .trip-info-item {
-        display: block !important;
-        overflow: hidden !important;
-        padding: 5px 12px !important;
-        border-bottom: 1px solid #e9ecef !important;
-      }
+      .trip-info-item { display: block !important; overflow: hidden !important; padding: 5px 12px !important; border-bottom: 1px solid #e9ecef !important; }
       .trip-info-item:last-child { border-bottom: none !important; }
-      .trip-info-item .lbl {
-        display: inline-block !important;
-        width: 33% !important;
-        vertical-align: top !important;
-        font-size: 7pt !important;
-        color: #6c757d !important;
-        text-transform: uppercase !important;
-        font-weight: 700 !important;
-        letter-spacing: .5px !important;
-        padding-top: 1px !important;
-      }
-      .trip-info-item .val {
-        display: inline-block !important;
-        width: 65% !important;
-        vertical-align: top !important;
-        font-size: 9pt !important;
-        font-weight: 600 !important;
-        color: #1a2236 !important;
-      }
+      .trip-info-item .lbl { display: inline-block !important; width: 33% !important; vertical-align: top !important; font-size: 7pt !important; color: #6c757d !important; text-transform: uppercase !important; font-weight: 700 !important; letter-spacing: .5px !important; padding-top: 1px !important; }
+      .trip-info-item .val { display: inline-block !important; width: 65% !important; vertical-align: top !important; font-size: 9pt !important; font-weight: 600 !important; color: #1a2236 !important; }
 
-      /* ── Customer card ── */
       #trip-customer-info { padding: 10px 12px !important; }
       #trip-customer-info .d-flex { display: block !important; }
       #trip-customer-info .d-flex > div:first-child { display: none !important; }
       #trip-customer-info .fw-bold { font-size: 10.5pt !important; margin-bottom: 3px !important; display: block; }
       #trip-customer-info .text-muted { font-size: 8.5pt !important; }
-
       .badge-s { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
-      /* ── Itinerary wrapper ── */
-      .itinerary-wrap {
-        clear: both !important;
-        box-shadow: none !important;
-        padding: 0 !important;
-        border: none !important;
-        background: transparent !important;
-        margin-top: 14px !important;
-      }
+      .itinerary-wrap { clear: both !important; box-shadow: none !important; padding: 0 !important; border: none !important; background: transparent !important; margin-top: 14px !important; }
       .itinerary-wrap > .d-flex { margin-bottom: 8pt !important; }
       .itinerary-wrap > .d-flex h5 { font-size: 11pt !important; }
       #itinerary-content { display: block !important; }
       #itinerary-content > h1 { font-size: 13pt !important; border-bottom-color: #1e3c72 !important; }
 
-      /* ── Day cards ── */
-      .itin-day {
-        box-shadow: none !important;
-        border: 1.5px solid #1e3c72 !important;
-        border-radius: 0 !important;
-        break-inside: avoid;
-        page-break-inside: avoid;
-        margin: 10pt 0;
-      }
-      .itin-day-hdr {
-        background: #1e3c72 !important;
-        -webkit-print-color-adjust: exact; print-color-adjust: exact;
-        padding: 9px 16px !important;
-        border-radius: 0 !important;
-      }
+      .itin-day { box-shadow: none !important; border: 1.5px solid #1e3c72 !important; border-radius: 0 !important; break-inside: avoid; page-break-inside: avoid; margin: 10pt 0; }
+      .itin-day-hdr { background: #1e3c72 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 9px 16px !important; border-radius: 0 !important; }
       .itin-day-hdr h2 { font-size: 10.5pt !important; color: #fff !important; }
       .itin-day-body { padding: 10px 16px !important; }
       .itin-day-body h3 { font-size: 8pt !important; break-after: avoid; page-break-after: avoid; }
 
-      /* ── Time-slot & callout colours ── */
       .t-morning, .t-afternoon, .t-evening, .t-night, .t-other,
       .itin-weather, .itin-tip { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .t-morning   { background: #fff5eb !important; border-left: 4px solid #f97316 !important; }
@@ -312,15 +367,7 @@
       .itin-weather { background: #ecfdf5 !important; border-color: #bbf7d0 !important; }
       .itin-tip    { background: #fffbeb !important; }
 
-      /* ── Section headings ── */
-      .itin-sh {
-        -webkit-print-color-adjust: exact; print-color-adjust: exact;
-        font-size: 10pt !important;
-        break-after: avoid; page-break-after: avoid;
-        margin: 10pt 0 4pt !important;
-      }
-
-      /* ── Body text ── */
+      .itin-sh { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 10pt !important; break-after: avoid; page-break-after: avoid; margin: 10pt 0 4pt !important; }
       #itinerary-content li { font-size: 9pt; line-height: 1.6; }
       #itinerary-content p  { font-size: 9pt; line-height: 1.6; }
     }
@@ -333,8 +380,8 @@
       #sidebar { transform: translateX(-100%); top: 0; }
       #sidebar.open { transform: translateX(0); }
       .sidebar-backdrop.open { display: block; }
-      #main { margin-left: 0; padding: calc(var(--mobile-bar) + 14px) 12px 20px; }
-      .topbar { margin-bottom: 14px; }
+      #main { margin-left: 0; padding: calc(var(--mob) + 14px) 14px 20px; }
+      .topbar { margin-bottom: 16px; }
       .topbar h1 { font-size: 1.1rem; }
       .topbar .d-flex.gap-2 { gap: 6px !important; }
       .topbar .btn { padding: .3rem .55rem; font-size: .8rem; }
@@ -367,14 +414,21 @@
 
 <!-- Sidebar -->
 <div id="sidebar">
-  <div class="brand"><i class="fa-solid fa-plane-departure"></i>Travel CRM</div>
+  <div class="brand">
+    <div class="b-icon"><i class="fa-solid fa-plane-departure"></i></div>
+    <div class="b-text">
+      <span class="b-name">Travel CRM</span>
+      <span class="b-sub">Agent Portal</span>
+    </div>
+  </div>
   <nav>
+    <span class="nav-section-lbl">Main</span>
     <a class="nav-link active" href="#" data-view="dashboard"><i class="fa-solid fa-chart-line"></i>Dashboard</a>
     <a class="nav-link" href="#" data-view="customers"><i class="fa-solid fa-users"></i>Customers</a>
     <a class="nav-link" href="#" data-view="trips"><i class="fa-solid fa-suitcase-rolling"></i>Trips</a>
+    <span class="nav-section-lbl" id="nav-section-admin" style="display:none">Admin</span>
     <a class="nav-link" href="#" data-view="agents" id="nav-agents" style="display:none"><i class="fa-solid fa-user-tie"></i>Agents</a>
   </nav>
-  <!-- Footer: sign-in button OR user info -->
   <div class="sidebar-footer">
     <div id="sidebar-signin-wrap">
       <button class="signin-btn" id="btn-open-login">
@@ -398,41 +452,45 @@
   <!-- ── Dashboard ── -->
   <div class="view active" id="view-dashboard">
     <div class="topbar">
-      <h1>Dashboard</h1>
-      <span class="text-muted small" id="dash-date"></span>
+      <div>
+        <h1>Dashboard</h1>
+        <div class="text-muted small mt-1" id="dash-date" style="font-size:.82rem"></div>
+      </div>
     </div>
     <div class="row g-3 mb-4">
       <div class="col-6 col-xl-3">
-        <div class="stat-card">
-          <div class="icon" style="background:#e8f0fe"><i class="fa-solid fa-users" style="color:#1a73e8"></i></div>
+        <div class="stat-card sc-blue">
+          <div class="sc-top"><div class="icon"><i class="fa-solid fa-users"></i></div></div>
           <div class="value" id="stat-customers">—</div>
           <div class="label">Total Customers</div>
         </div>
       </div>
       <div class="col-6 col-xl-3">
-        <div class="stat-card">
-          <div class="icon" style="background:#e6f4ea"><i class="fa-solid fa-suitcase-rolling" style="color:#188038"></i></div>
+        <div class="stat-card sc-green">
+          <div class="sc-top"><div class="icon"><i class="fa-solid fa-suitcase-rolling"></i></div></div>
           <div class="value" id="stat-trips">—</div>
           <div class="label">Total Trips</div>
         </div>
       </div>
       <div class="col-6 col-xl-3">
-        <div class="stat-card">
-          <div class="icon" style="background:#f3e8fd"><i class="fa-solid fa-map" style="color:#7b1fa2"></i></div>
+        <div class="stat-card sc-violet">
+          <div class="sc-top"><div class="icon"><i class="fa-solid fa-map"></i></div></div>
           <div class="value" id="stat-itineraries">—</div>
           <div class="label">Itineraries</div>
         </div>
       </div>
       <div class="col-6 col-xl-3">
-        <div class="stat-card">
-          <div class="icon" style="background:#fff3e0"><i class="fa-solid fa-clock-rotate-left" style="color:#e65100"></i></div>
+        <div class="stat-card sc-amber">
+          <div class="sc-top"><div class="icon"><i class="fa-solid fa-clock-rotate-left"></i></div></div>
           <div class="value" id="stat-planning">—</div>
           <div class="label">In Planning</div>
         </div>
       </div>
     </div>
     <div class="table-card">
-      <div class="card-hdr"><span class="fw-semibold">Recent Trips</span></div>
+      <div class="card-hdr">
+        <span class="chdr-title"><i class="fa-solid fa-clock-rotate-left"></i>Recent Trips</span>
+      </div>
       <div class="table-responsive">
         <table class="table table-hover mb-0">
           <thead class="table-light"><tr><th>Customer</th><th>Destination</th><th>Days</th><th>Status</th></tr></thead>
@@ -448,8 +506,9 @@
       <h1>Customers</h1>
       <button class="btn btn-primary btn-sm" id="btn-add-customer"><i class="fa-solid fa-plus me-1"></i><span class="btn-txt">Add Customer</span></button>
     </div>
-    <div class="mb-3">
-      <input type="text" class="form-control" id="customer-search" placeholder="Search name or email…" style="max-width:320px" />
+    <div class="mb-3" style="position:relative;max-width:320px">
+      <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:.82rem;pointer-events:none"></i>
+      <input type="text" class="form-control" id="customer-search" placeholder="Search name or email…" style="padding-left:34px" />
     </div>
     <div class="table-card">
       <div class="table-responsive">
@@ -509,21 +568,23 @@
     </div>
     <div class="row g-3 mb-4">
       <div class="col-12 col-md-6">
-        <div class="table-card p-3 h-100">
-          <h6 class="text-uppercase text-muted mb-3" style="font-size:.7rem;letter-spacing:.7px">Trip Details</h6>
-          <div class="trip-info-grid" id="trip-detail-info"></div>
+        <div class="table-card h-100">
+          <div class="info-card-hdr"><i class="fa-solid fa-circle-info"></i>Trip Details</div>
+          <div class="p-3">
+            <div class="trip-info-grid" id="trip-detail-info"></div>
+          </div>
         </div>
       </div>
       <div class="col-12 col-md-6">
-        <div class="table-card p-3 h-100">
-          <h6 class="text-uppercase text-muted mb-3" style="font-size:.7rem;letter-spacing:.7px">Customer</h6>
-          <div id="trip-customer-info"></div>
+        <div class="table-card h-100">
+          <div class="info-card-hdr"><i class="fa-solid fa-user"></i>Customer</div>
+          <div class="p-3" id="trip-customer-info"></div>
         </div>
       </div>
     </div>
     <div class="itinerary-wrap">
       <div class="d-flex align-items-center justify-content-between mb-3">
-        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-map-location-dot me-2 text-primary"></i>Itinerary</h5>
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-map-location-dot me-2" style="color:var(--accent)"></i>Itinerary</h5>
         <span id="itinerary-status-badge"></span>
       </div>
       <div id="itin-placeholder" class="empty-state">
@@ -537,21 +598,20 @@
       <div id="itinerary-content" style="display:none"></div>
     </div>
 
-    <!-- Review panel — shown below itinerary when one exists -->
+    <!-- Review panel -->
     <div class="review-panel" id="review-panel" style="display:none">
-      <h5><i class="fa-solid fa-clipboard-check me-2 text-primary"></i>Agent Review</h5>
+      <h5><i class="fa-solid fa-clipboard-check me-2" style="color:var(--accent)"></i>Agent Review</h5>
       <div id="existing-review"></div>
-      <!-- shown when logged in -->
       <div id="review-form-wrap" style="display:none">
         <div class="mb-3">
-          <label class="form-label fw-semibold" style="font-size:.88rem">Decision</label>
+          <label class="form-label">Decision</label>
           <select class="form-select" id="review-status">
             <option value="accepted">✅ Accept Itinerary</option>
             <option value="changes_suggested">📝 Suggest Changes</option>
           </select>
         </div>
         <div class="mb-3">
-          <label class="form-label fw-semibold" style="font-size:.88rem">Comment <span class="text-muted fw-normal">(optional)</span></label>
+          <label class="form-label">Comment <span class="text-muted fw-normal" style="font-size:.78rem">(optional)</span></label>
           <textarea class="form-control" id="review-comment" rows="3" placeholder="Notes for the customer or the team…"></textarea>
         </div>
         <div class="d-flex gap-2 flex-wrap">
@@ -563,14 +623,12 @@
           </button>
         </div>
       </div>
-      <!-- shown when NOT logged in -->
       <div id="review-login-prompt" class="review-login-prompt" style="display:none">
         <i class="fa-solid fa-lock mb-2" style="font-size:1.2rem"></i><br>
         <a onclick="document.getElementById('btn-open-login').click()">Sign in as an agent</a> to review this itinerary.
       </div>
     </div>
 
-    <!-- Print footer — visible only in @media print -->
     <div id="print-footer" style="display:none"></div>
   </div>
 
@@ -605,23 +663,25 @@
 <!-- ── Login Modal ── -->
 <div class="modal fade" id="loginModal" tabindex="-1" data-bs-backdrop="true">
   <div class="modal-dialog modal-dialog-centered" style="max-width:380px">
-    <div class="modal-content border-0 shadow">
-      <div class="modal-body p-4">
-        <div class="text-center mb-3">
-          <i class="fa-solid fa-plane-departure" style="font-size:1.8rem;color:#4ea8ff"></i>
-          <h5 class="fw-bold mt-2 mb-0">Agent Sign In</h5>
-          <p class="text-muted small mb-0">Access review & management features</p>
+    <div class="modal-content border-0" style="border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.18)">
+      <div style="background:linear-gradient(135deg,#0d1b38 0%,#1e3260 100%);padding:28px 28px 22px;text-align:center">
+        <div style="width:50px;height:50px;border-radius:14px;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 6px 18px rgba(59,130,246,.45)">
+          <i class="fa-solid fa-plane-departure" style="color:#fff;font-size:1.2rem"></i>
         </div>
+        <h5 style="color:#fff;font-weight:700;margin:0 0 4px;font-size:1.05rem;letter-spacing:-.01em">Agent Sign In</h5>
+        <p style="color:rgba(255,255,255,.45);font-size:.8rem;margin:0">Access review & management features</p>
+      </div>
+      <div class="modal-body p-4">
         <div id="login-error" class="alert alert-danger py-2 small" style="display:none"></div>
         <div class="mb-3">
-          <label class="form-label fw-semibold small">Username</label>
+          <label class="form-label">Username</label>
           <input type="text" class="form-control" id="login-username" placeholder="Enter username" autocomplete="username" />
         </div>
         <div class="mb-3">
-          <label class="form-label fw-semibold small">Password</label>
+          <label class="form-label">Password</label>
           <input type="password" class="form-control" id="login-password" placeholder="Enter password" autocomplete="current-password" />
         </div>
-        <button class="btn btn-primary w-100" id="btn-login">
+        <button class="btn btn-primary w-100" id="btn-login" style="padding:.55rem">
           <i class="fa-solid fa-right-to-bracket me-2"></i>Sign In
         </button>
       </div>
@@ -632,9 +692,12 @@
 <!-- ── Customer Modal ── -->
 <div class="modal fade" id="customerModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title" id="custModalTitle">Add Customer</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
+    <div class="modal-content border-0" style="border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.14)">
+      <div class="modal-header" style="border-bottom:1px solid var(--bdr-lt);padding:18px 24px">
+        <h5 class="modal-title fw-700" id="custModalTitle" style="font-weight:700;font-size:1rem;letter-spacing:-.01em">Add Customer</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="padding:20px 24px">
         <form id="customerForm">
           <input type="hidden" id="cust-id" />
           <div class="mb-3"><label class="form-label">Name <span class="text-danger">*</span></label><input type="text" class="form-control" id="cust-name" required /></div>
@@ -646,7 +709,10 @@
           <div class="mb-3"><label class="form-label">Notes</label><textarea class="form-control" id="cust-notes" rows="3"></textarea></div>
         </form>
       </div>
-      <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" id="btn-save-customer">Save</button></div>
+      <div class="modal-footer" style="border-top:1px solid var(--bdr-lt);padding:14px 24px">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-customer">Save Customer</button>
+      </div>
     </div>
   </div>
 </div>
@@ -654,9 +720,12 @@
 <!-- ── Trip Modal ── -->
 <div class="modal fade" id="tripModal" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title" id="tripModalTitle">Add Trip</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
+    <div class="modal-content border-0" style="border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.14)">
+      <div class="modal-header" style="border-bottom:1px solid var(--bdr-lt);padding:18px 24px">
+        <h5 class="modal-title" id="tripModalTitle" style="font-weight:700;font-size:1rem;letter-spacing:-.01em">Add Trip</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="padding:20px 24px">
         <form id="tripForm">
           <input type="hidden" id="trip-id" />
           <div class="row g-3">
@@ -711,7 +780,10 @@
           </div>
         </form>
       </div>
-      <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" id="btn-save-trip">Save</button></div>
+      <div class="modal-footer" style="border-top:1px solid var(--bdr-lt);padding:14px 24px">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-trip">Save Trip</button>
+      </div>
     </div>
   </div>
 </div>
@@ -719,9 +791,12 @@
 <!-- ── Agent Modal ── -->
 <div class="modal fade" id="agentModal" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title" id="agentModalTitle">Add Agent</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
+    <div class="modal-content border-0" style="border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.14)">
+      <div class="modal-header" style="border-bottom:1px solid var(--bdr-lt);padding:18px 24px">
+        <h5 class="modal-title" id="agentModalTitle" style="font-weight:700;font-size:1rem;letter-spacing:-.01em">Add Agent</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="padding:20px 24px">
         <form id="agentForm">
           <input type="hidden" id="agent-id" />
           <div class="row g-3">
@@ -761,18 +836,29 @@
           </div>
         </form>
       </div>
-      <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" id="btn-save-agent">Save</button></div>
+      <div class="modal-footer" style="border-top:1px solid var(--bdr-lt);padding:14px 24px">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-agent">Save Agent</button>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- ── Delete Modal ── -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
-  <div class="modal-dialog modal-sm">
-    <div class="modal-content">
-      <div class="modal-header border-0 pb-0"><h5 class="modal-title text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>Delete</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body" id="del-confirm-text">Are you sure?</div>
-      <div class="modal-footer border-0 pt-0"><button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button class="btn btn-danger btn-sm" id="btn-confirm-del">Delete</button></div>
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content border-0" style="border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,.16)">
+      <div class="modal-body p-4 text-center">
+        <div style="width:48px;height:48px;border-radius:12px;background:rgba(239,68,68,.1);display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+          <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;font-size:1.2rem"></i>
+        </div>
+        <h6 style="font-weight:700;margin-bottom:8px">Confirm Delete</h6>
+        <p class="text-muted small mb-4" id="del-confirm-text">Are you sure?</p>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary btn-sm flex-fill" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-danger btn-sm flex-fill" id="btn-confirm-del">Delete</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -909,7 +995,9 @@ function applyAuthState() {
   const loggedIn = !!currentUser;
   document.getElementById('sidebar-signin-wrap').style.display = loggedIn ? 'none' : '';
   document.getElementById('sidebar-user-wrap').style.display = loggedIn ? '' : 'none';
-  document.getElementById('nav-agents').style.display = (loggedIn && currentUser.role === 'admin') ? '' : 'none';
+  const showAgents = loggedIn && currentUser.role === 'admin';
+  document.getElementById('nav-agents').style.display = showAgents ? '' : 'none';
+  document.getElementById('nav-section-admin').style.display = showAgents ? '' : 'none';
   if (loggedIn) {
     document.getElementById('sidebar-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
     document.getElementById('sidebar-uname').textContent = currentUser.name;
@@ -1181,10 +1269,10 @@ async function openTripDetail(id) {
       +(t.notes?`<div class="trip-info-item" style="grid-column:1/-1"><div class="lbl">Notes</div><div class="val" style="font-weight:400;color:#495057">${esc(t.notes)}</div></div>`:'');
     document.getElementById('trip-customer-info').innerHTML = t.customer_name
       ? `<div class="d-flex align-items-center gap-3">
-          <div style="width:44px;height:44px;border-radius:50%;background:#e8f0fe;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;color:#1a73e8;flex-shrink:0">
+          <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;color:#fff;flex-shrink:0;box-shadow:0 4px 12px rgba(59,130,246,.28)">
             ${esc(t.customer_name.charAt(0).toUpperCase())}
           </div>
-          <div><div class="fw-bold">${esc(t.customer_name)}</div><div class="text-muted small">${esc(t.customer_email||'')}</div></div>
+          <div><div class="fw-bold" style="font-size:.96rem">${esc(t.customer_name)}</div><div class="text-muted small">${esc(t.customer_email||'')}</div></div>
         </div>`
       : '<p class="text-muted mb-0">No customer data</p>';
     if (t.itinerary) {
