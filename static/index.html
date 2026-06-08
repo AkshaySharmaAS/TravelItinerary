@@ -308,6 +308,60 @@
     #itinerary-content > h1 { font-size: 1.42rem; font-weight: 800; color: var(--text); margin-bottom: .9rem; padding-bottom: .55rem; border-bottom: 3px solid var(--bdr); letter-spacing: -.02em; }
     #itinerary-content li { margin-bottom: .3rem; line-height: 1.65; }
 
+    /* ── Trip detail tabs ──────────────────────────────────────────────────── */
+    .trip-tabs-wrap { margin-bottom: 16px; }
+    .trip-tabs { display: flex; gap: 4px; background: var(--card); border-radius: var(--r);
+                 box-shadow: var(--sh); border: 1px solid var(--bdr-lt); padding: 6px; overflow-x: auto; }
+    .trip-tabs::-webkit-scrollbar { height: 3px; }
+    .trip-tab { border: none; background: transparent; padding: .46rem 1.05rem; border-radius: 9px;
+                font-size: .84rem; font-weight: 600; color: var(--t2); cursor: pointer;
+                white-space: nowrap; transition: all .15s; display: flex; align-items: center; gap: 6px;
+                font-family: inherit; }
+    .trip-tab:hover { background: var(--bg); color: var(--text); }
+    .trip-tab.active { background: var(--accent-bg); color: var(--accent); }
+    .trip-tab i { font-size: .78rem; }
+    .trip-tab-pane { display: none; }
+    .trip-tab-pane.active { display: block; }
+
+    /* ── Checklist styles ──────────────────────────────────────────────────── */
+    #checklist-content h2 {
+      font-size: .96rem; font-weight: 700; color: var(--text);
+      margin: 1.6rem 0 .65rem; padding-bottom: .38rem;
+      border-bottom: 2px solid var(--bdr); display: flex; align-items: center; gap: 7px;
+    }
+    #checklist-content ul { list-style: none; padding-left: 0; margin: 0 0 .4rem; }
+    #checklist-content ul li {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 6px 6px; border-bottom: 1px solid var(--bdr-lt); font-size: .9rem; line-height: 1.5;
+    }
+    #checklist-content ul li:last-child { border-bottom: none; }
+    #checklist-content ul li input[type=checkbox] {
+      width: 17px; height: 17px; flex-shrink: 0; margin-top: 2px;
+      accent-color: var(--green); cursor: pointer; border-radius: 4px;
+    }
+    #checklist-content ul li.cl-done { opacity: .5; text-decoration: line-through; }
+    #checklist-content ul li.cl-done > * { opacity: 1; }
+    #checklist-content p { font-size: .9rem; color: var(--t2); margin: .3rem 0; }
+
+    /* ── Weather analysis styles ────────────────────────────────────────────── */
+    #weather-content h1 { font-size: 1.35rem; font-weight: 800; color: var(--text); margin-bottom: 1rem; padding-bottom: .5rem; border-bottom: 3px solid var(--bdr); }
+    #weather-content h2 { font-size: .96rem; font-weight: 700; color: var(--text); margin: 1.6rem 0 .65rem; padding-bottom: .38rem; border-bottom: 2px solid var(--bdr); display: flex; align-items: center; gap: 7px; }
+    #weather-content p { font-size: .9rem; line-height: 1.7; color: var(--text); }
+    #weather-content ul li, #weather-content ol li { font-size: .9rem; line-height: 1.65; margin-bottom: .25rem; }
+    #weather-content blockquote {
+      background: linear-gradient(90deg,#fff7ed,#fffbeb);
+      border: 1px solid #fed7aa; border-left: 4px solid #f97316;
+      border-radius: 0 9px 9px 0; padding: 11px 16px; margin: .9rem 0; color: #7c2d12;
+    }
+    #weather-content blockquote p { margin: 0; font-size: .87rem; color: #7c2d12; }
+    #weather-content strong { color: var(--text); }
+    .weather-verdict {
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      color: #fff; border-radius: 12px; padding: 16px 20px; margin-top: 1.2rem;
+      font-size: .92rem; font-weight: 500; line-height: 1.6;
+    }
+    .weather-verdict strong { color: #93c5fd; }
+
     /* ════════════════════════════════════════════════════════
        Print / PDF
     ════════════════════════════════════════════════════════ */
@@ -318,7 +372,9 @@
       .topbar .d-flex:last-child, .back-btn,
       #itinerary-status-badge, .review-panel,
       #itin-placeholder, #itin-thinking,
+      .trip-tabs-wrap, #tab-pane-checklist, #tab-pane-weather,
       #print-hdr, #print-footer { display: none !important; }
+      #tab-pane-itinerary { display: block !important; }
 
       html, body { background: #fff !important; font-size: 10pt; color: #111; }
       #main { margin-left: 0 !important; padding: 0 !important; }
@@ -586,50 +642,115 @@
         </div>
       </div>
     </div>
-    <div class="itinerary-wrap">
-      <div class="d-flex align-items-center justify-content-between mb-3">
-        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-map-location-dot me-2" style="color:var(--accent)"></i>Itinerary</h5>
-        <span id="itinerary-status-badge"></span>
-      </div>
-      <div id="itin-placeholder" class="empty-state">
-        <i class="fa-solid fa-route"></i>
-        <p class="mb-0">No itinerary yet.<br>Tap <strong>Generate Itinerary</strong> to create one with AI.</p>
-      </div>
-      <div id="itin-thinking" class="thinking-row" style="display:none">
-        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-        <span id="thinking-msg">Connecting…</span>
-      </div>
-      <div id="itinerary-content" style="display:none"></div>
+    <!-- Tab navigation -->
+    <div class="trip-tabs-wrap">
+      <nav class="trip-tabs" id="tripDetailTabs">
+        <button class="trip-tab active" data-tab="itinerary">
+          <i class="fa-solid fa-map-location-dot"></i> Itinerary
+        </button>
+        <button class="trip-tab" data-tab="checklist">
+          <i class="fa-solid fa-list-check"></i> Checklist
+        </button>
+        <button class="trip-tab" data-tab="weather">
+          <i class="fa-solid fa-cloud-sun-rain"></i> Weather Analysis
+        </button>
+      </nav>
     </div>
 
-    <!-- Review panel -->
-    <div class="review-panel" id="review-panel" style="display:none">
-      <h5><i class="fa-solid fa-clipboard-check me-2" style="color:var(--accent)"></i>Agent Review</h5>
-      <div id="existing-review"></div>
-      <div id="review-form-wrap" style="display:none">
-        <div class="mb-3">
-          <label class="form-label">Decision</label>
-          <select class="form-select" id="review-status">
-            <option value="accepted">✅ Accept Itinerary</option>
-            <option value="changes_suggested">📝 Suggest Changes</option>
-          </select>
+    <!-- Tab pane: Itinerary -->
+    <div id="tab-pane-itinerary" class="trip-tab-pane active">
+      <div class="itinerary-wrap">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h5 class="mb-0 fw-bold"><i class="fa-solid fa-map-location-dot me-2" style="color:var(--accent)"></i>Itinerary</h5>
+          <span id="itinerary-status-badge"></span>
         </div>
-        <div class="mb-3">
-          <label class="form-label">Comment <span class="text-muted fw-normal" style="font-size:.78rem">(optional)</span></label>
-          <textarea class="form-control" id="review-comment" rows="3" placeholder="Notes for the customer or the team…"></textarea>
+        <div id="itin-placeholder" class="empty-state">
+          <i class="fa-solid fa-route"></i>
+          <p class="mb-0">No itinerary yet.<br>Tap <strong>Generate Itinerary</strong> to create one with AI.</p>
         </div>
-        <div class="d-flex gap-2 flex-wrap">
-          <button class="btn btn-primary btn-sm" id="btn-submit-review">
-            <i class="fa-solid fa-paper-plane me-1"></i>Submit Review
-          </button>
-          <button class="btn btn-warning btn-sm" id="btn-regen-with-changes" style="display:none">
-            <i class="fa-solid fa-rotate me-1"></i>Re-generate with Changes
-          </button>
+        <div id="itin-thinking" class="thinking-row" style="display:none">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+          <span id="thinking-msg">Connecting…</span>
+        </div>
+        <div id="itinerary-content" style="display:none"></div>
+      </div>
+      <!-- Review panel -->
+      <div class="review-panel" id="review-panel" style="display:none">
+        <h5><i class="fa-solid fa-clipboard-check me-2" style="color:var(--accent)"></i>Agent Review</h5>
+        <div id="existing-review"></div>
+        <div id="review-form-wrap" style="display:none">
+          <div class="mb-3">
+            <label class="form-label">Decision</label>
+            <select class="form-select" id="review-status">
+              <option value="accepted">✅ Accept Itinerary</option>
+              <option value="changes_suggested">📝 Suggest Changes</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Comment <span class="text-muted fw-normal" style="font-size:.78rem">(optional)</span></label>
+            <textarea class="form-control" id="review-comment" rows="3" placeholder="Notes for the customer or the team…"></textarea>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-primary btn-sm" id="btn-submit-review">
+              <i class="fa-solid fa-paper-plane me-1"></i>Submit Review
+            </button>
+            <button class="btn btn-warning btn-sm" id="btn-regen-with-changes" style="display:none">
+              <i class="fa-solid fa-rotate me-1"></i>Re-generate with Changes
+            </button>
+          </div>
+        </div>
+        <div id="review-login-prompt" class="review-login-prompt" style="display:none">
+          <i class="fa-solid fa-lock mb-2" style="font-size:1.2rem"></i><br>
+          <a onclick="document.getElementById('btn-open-login').click()">Sign in as an agent</a> to review this itinerary.
         </div>
       </div>
-      <div id="review-login-prompt" class="review-login-prompt" style="display:none">
-        <i class="fa-solid fa-lock mb-2" style="font-size:1.2rem"></i><br>
-        <a onclick="document.getElementById('btn-open-login').click()">Sign in as an agent</a> to review this itinerary.
+    </div>
+
+    <!-- Tab pane: Checklist -->
+    <div id="tab-pane-checklist" class="trip-tab-pane">
+      <div class="itinerary-wrap">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h5 class="mb-0 fw-bold"><i class="fa-solid fa-list-check me-2" style="color:var(--accent)"></i>Travel Checklist</h5>
+          <div class="d-flex align-items-center gap-2">
+            <span id="checklist-status-badge"></span>
+            <button class="btn btn-primary btn-sm" id="btn-gen-checklist">
+              <i class="fa-solid fa-wand-magic-sparkles"></i><span class="ms-1 d-none d-sm-inline">Generate Checklist</span>
+            </button>
+          </div>
+        </div>
+        <div id="checklist-placeholder" class="empty-state">
+          <i class="fa-solid fa-list-check"></i>
+          <p class="mb-0">No checklist yet.<br>Generate an itinerary first, then tap <strong>Generate Checklist</strong>.</p>
+        </div>
+        <div id="checklist-thinking" class="thinking-row" style="display:none">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+          <span id="checklist-thinking-msg">Preparing your checklist…</span>
+        </div>
+        <div id="checklist-content" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- Tab pane: Weather Analysis -->
+    <div id="tab-pane-weather" class="trip-tab-pane">
+      <div class="itinerary-wrap">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h5 class="mb-0 fw-bold"><i class="fa-solid fa-cloud-sun-rain me-2" style="color:var(--accent)"></i>Weather Analysis</h5>
+          <div class="d-flex align-items-center gap-2">
+            <span id="weather-status-badge"></span>
+            <button class="btn btn-primary btn-sm" id="btn-gen-weather">
+              <i class="fa-solid fa-wand-magic-sparkles"></i><span class="ms-1 d-none d-sm-inline">Analyse Weather</span>
+            </button>
+          </div>
+        </div>
+        <div id="weather-placeholder" class="empty-state">
+          <i class="fa-solid fa-cloud-sun-rain"></i>
+          <p class="mb-0">No weather analysis yet.<br>Tap <strong>Analyse Weather</strong> for a detailed, honest study.</p>
+        </div>
+        <div id="weather-thinking" class="thinking-row" style="display:none">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+          <span id="weather-thinking-msg">Analysing climate data…</span>
+        </div>
+        <div id="weather-content" style="display:none"></div>
       </div>
     </div>
 
@@ -1251,6 +1372,9 @@ async function openTripDetail(id) {
   showView('trip-detail');
   document.querySelectorAll('#sidebar nav .nav-link').forEach(l=>l.classList.remove('active'));
   resetItinUI();
+  resetChecklistUI();
+  resetWeatherUI();
+  switchToTab('itinerary');
   document.getElementById('review-panel').style.display = 'none';
   try {
     const t = await api('GET','/trips/'+id);
@@ -1284,6 +1408,8 @@ async function openTripDetail(id) {
       currentTripReview = t.review;
       renderReviewPanel(t.review);
     }
+    if (t.checklist) showChecklist(t.checklist, t.checklist_generated_at, id);
+    if (t.weather_analysis) showWeatherAnalysis(t.weather_analysis, t.weather_generated_at);
   } catch(e) { toast('Error loading trip: '+e.message,'danger'); }
 }
 
@@ -1363,6 +1489,214 @@ document.getElementById('btn-submit-review').addEventListener('click', async () 
 document.getElementById('btn-regen-with-changes').addEventListener('click', () => {
   if (!currentTripId || streaming) return;
   streamItinerary(currentTripId, true);
+});
+
+// ─────────────────────────────────────────────
+// Trip detail tabs
+// ─────────────────────────────────────────────
+document.getElementById('tripDetailTabs').addEventListener('click', e => {
+  const btn = e.target.closest('.trip-tab');
+  if (!btn) return;
+  const tab = btn.dataset.tab;
+  document.querySelectorAll('.trip-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.trip-tab-pane').forEach(p => p.classList.toggle('active', p.id === `tab-pane-${tab}`));
+});
+
+function switchToTab(tab) {
+  document.querySelectorAll('.trip-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.trip-tab-pane').forEach(p => p.classList.toggle('active', p.id === `tab-pane-${tab}`));
+}
+
+// ─────────────────────────────────────────────
+// Checklist
+// ─────────────────────────────────────────────
+function applyChecklistStyles(el, tripId) {
+  el.querySelectorAll('input[type=checkbox]').forEach((cb, idx) => {
+    cb.disabled = false;
+    const key = `cl_${tripId}_${idx}`;
+    cb.checked = localStorage.getItem(key) === '1';
+    const li = cb.closest('li');
+    if (cb.checked && li) li.classList.add('cl-done');
+    cb.addEventListener('change', () => {
+      localStorage.setItem(key, cb.checked ? '1' : '0');
+      if (li) li.classList.toggle('cl-done', cb.checked);
+    });
+  });
+}
+
+function showChecklist(markdown, generatedAt, tripId) {
+  document.getElementById('checklist-placeholder').style.display = 'none';
+  document.getElementById('checklist-thinking').style.display = 'none';
+  const el = document.getElementById('checklist-content');
+  el.style.display = ''; el.classList.remove('cursor');
+  el.innerHTML = marked.parse(markdown);
+  applyChecklistStyles(el, tripId);
+  const tsLabel = generatedAt ? ` · ${fmtDT(generatedAt)}` : '';
+  document.getElementById('checklist-status-badge').innerHTML =
+    `<span class="badge bg-success">Saved${tsLabel}</span>`;
+}
+
+function resetChecklistUI() {
+  document.getElementById('checklist-placeholder').style.display = '';
+  document.getElementById('checklist-thinking').style.display = 'none';
+  const el = document.getElementById('checklist-content');
+  el.style.display = 'none'; el.innerHTML = ''; el.classList.remove('cursor');
+  document.getElementById('checklist-status-badge').innerHTML = '';
+  document.getElementById('btn-gen-checklist').disabled = false;
+}
+
+async function streamChecklist(tripId) {
+  document.getElementById('btn-gen-checklist').disabled = true;
+  document.getElementById('checklist-placeholder').style.display = 'none';
+  document.getElementById('checklist-status-badge').innerHTML = '<span class="badge bg-primary">Generating…</span>';
+  const thinkEl = document.getElementById('checklist-thinking');
+  const contentEl = document.getElementById('checklist-content');
+  contentEl.style.display = 'none'; contentEl.innerHTML = '';
+  thinkEl.style.display = 'flex';
+  document.getElementById('checklist-thinking-msg').textContent = 'Starting…';
+  let raw = '';
+  try {
+    const resp = await fetch(`/api/trips/${tripId}/generate-checklist`);
+    if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.detail || 'HTTP '+resp.status); }
+    const reader = resp.body.getReader(); const dec = new TextDecoder(); let buf = '';
+    while (true) {
+      const { done, value } = await reader.read(); if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let ev; try { ev = JSON.parse(line.slice(6)); } catch { continue; }
+        if (ev.type==='status'||ev.type==='thinking') {
+          document.getElementById('checklist-thinking-msg').textContent = ev.message;
+        } else if (ev.type==='text_start') {
+          thinkEl.style.display = 'none'; contentEl.style.display = ''; contentEl.classList.add('cursor');
+        } else if (ev.type==='text') {
+          raw += ev.content;
+          if (raw.length % 300 < ev.content.length) contentEl.innerHTML = marked.parse(raw);
+        } else if (ev.type==='done') {
+          contentEl.classList.remove('cursor');
+          contentEl.innerHTML = marked.parse(raw);
+          applyChecklistStyles(contentEl, tripId);
+          thinkEl.style.display = 'none';
+          document.getElementById('btn-gen-checklist').disabled = false;
+          try {
+            const fresh = await api('GET', `/trips/${tripId}`);
+            const tsLabel = fresh.checklist_generated_at ? ` · ${fmtDT(fresh.checklist_generated_at)}` : '';
+            document.getElementById('checklist-status-badge').innerHTML = `<span class="badge bg-success">Saved${tsLabel}</span>`;
+          } catch(_) {
+            document.getElementById('checklist-status-badge').innerHTML = '<span class="badge bg-success">Saved</span>';
+          }
+          toast('Checklist generated!', 'success');
+        } else if (ev.type==='error') {
+          thinkEl.style.display = 'none'; contentEl.style.display = '';
+          contentEl.innerHTML = `<div class="alert alert-danger mt-2"><i class="fa-solid fa-circle-exclamation me-2"></i>${esc(ev.message)}</div>`;
+          document.getElementById('checklist-status-badge').innerHTML = '<span class="badge bg-danger">Error</span>';
+          document.getElementById('btn-gen-checklist').disabled = false;
+        }
+      }
+    }
+  } catch(e) {
+    document.getElementById('checklist-thinking').style.display = 'none';
+    const el = document.getElementById('checklist-content');
+    el.style.display = ''; el.innerHTML = `<div class="alert alert-danger mt-2">${esc(e.message)}</div>`;
+    document.getElementById('checklist-status-badge').innerHTML = '<span class="badge bg-danger">Error</span>';
+    document.getElementById('btn-gen-checklist').disabled = false;
+    toast('Error: '+e.message,'danger');
+  }
+}
+
+document.getElementById('btn-gen-checklist').addEventListener('click', () => {
+  if (!currentTripId) return;
+  switchToTab('checklist');
+  streamChecklist(currentTripId);
+});
+
+// ─────────────────────────────────────────────
+// Weather Analysis
+// ─────────────────────────────────────────────
+function showWeatherAnalysis(markdown, generatedAt) {
+  document.getElementById('weather-placeholder').style.display = 'none';
+  document.getElementById('weather-thinking').style.display = 'none';
+  const el = document.getElementById('weather-content');
+  el.style.display = ''; el.classList.remove('cursor');
+  el.innerHTML = marked.parse(markdown);
+  const tsLabel = generatedAt ? ` · ${fmtDT(generatedAt)}` : '';
+  document.getElementById('weather-status-badge').innerHTML =
+    `<span class="badge bg-success">Saved${tsLabel}</span>`;
+}
+
+function resetWeatherUI() {
+  document.getElementById('weather-placeholder').style.display = '';
+  document.getElementById('weather-thinking').style.display = 'none';
+  const el = document.getElementById('weather-content');
+  el.style.display = 'none'; el.innerHTML = ''; el.classList.remove('cursor');
+  document.getElementById('weather-status-badge').innerHTML = '';
+  document.getElementById('btn-gen-weather').disabled = false;
+}
+
+async function streamWeatherAnalysis(tripId) {
+  document.getElementById('btn-gen-weather').disabled = true;
+  document.getElementById('weather-placeholder').style.display = 'none';
+  document.getElementById('weather-status-badge').innerHTML = '<span class="badge bg-primary">Generating…</span>';
+  const thinkEl = document.getElementById('weather-thinking');
+  const contentEl = document.getElementById('weather-content');
+  contentEl.style.display = 'none'; contentEl.innerHTML = '';
+  thinkEl.style.display = 'flex';
+  document.getElementById('weather-thinking-msg').textContent = 'Starting…';
+  let raw = '';
+  try {
+    const resp = await fetch(`/api/trips/${tripId}/generate-weather-analysis`);
+    if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.detail || 'HTTP '+resp.status); }
+    const reader = resp.body.getReader(); const dec = new TextDecoder(); let buf = '';
+    while (true) {
+      const { done, value } = await reader.read(); if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let ev; try { ev = JSON.parse(line.slice(6)); } catch { continue; }
+        if (ev.type==='status'||ev.type==='thinking') {
+          document.getElementById('weather-thinking-msg').textContent = ev.message;
+        } else if (ev.type==='text_start') {
+          thinkEl.style.display = 'none'; contentEl.style.display = ''; contentEl.classList.add('cursor');
+        } else if (ev.type==='text') {
+          raw += ev.content;
+          if (raw.length % 300 < ev.content.length) contentEl.innerHTML = marked.parse(raw);
+        } else if (ev.type==='done') {
+          contentEl.classList.remove('cursor');
+          contentEl.innerHTML = marked.parse(raw);
+          thinkEl.style.display = 'none';
+          document.getElementById('btn-gen-weather').disabled = false;
+          try {
+            const fresh = await api('GET', `/trips/${tripId}`);
+            const tsLabel = fresh.weather_generated_at ? ` · ${fmtDT(fresh.weather_generated_at)}` : '';
+            document.getElementById('weather-status-badge').innerHTML = `<span class="badge bg-success">Saved${tsLabel}</span>`;
+          } catch(_) {
+            document.getElementById('weather-status-badge').innerHTML = '<span class="badge bg-success">Saved</span>';
+          }
+          toast('Weather analysis complete!', 'success');
+        } else if (ev.type==='error') {
+          thinkEl.style.display = 'none'; contentEl.style.display = '';
+          contentEl.innerHTML = `<div class="alert alert-danger mt-2"><i class="fa-solid fa-circle-exclamation me-2"></i>${esc(ev.message)}</div>`;
+          document.getElementById('weather-status-badge').innerHTML = '<span class="badge bg-danger">Error</span>';
+          document.getElementById('btn-gen-weather').disabled = false;
+        }
+      }
+    }
+  } catch(e) {
+    document.getElementById('weather-thinking').style.display = 'none';
+    const el = document.getElementById('weather-content');
+    el.style.display = ''; el.innerHTML = `<div class="alert alert-danger mt-2">${esc(e.message)}</div>`;
+    document.getElementById('weather-status-badge').innerHTML = '<span class="badge bg-danger">Error</span>';
+    document.getElementById('btn-gen-weather').disabled = false;
+    toast('Error: '+e.message,'danger');
+  }
+}
+
+document.getElementById('btn-gen-weather').addEventListener('click', () => {
+  if (!currentTripId) return;
+  switchToTab('weather');
+  streamWeatherAnalysis(currentTripId);
 });
 
 // ─────────────────────────────────────────────

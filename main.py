@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from database import Customer, Itinerary, ItineraryReview, SessionLocal, Trip, User, create_tables, get_db, migrate_db, seed_admin
+from database import Customer, Itinerary, ItineraryReview, SessionLocal, Trip, TripChecklist, User, WeatherAnalysis, create_tables, get_db, migrate_db, seed_admin
 
 load_dotenv()
 create_tables()
@@ -87,6 +87,67 @@ Guidelines:
 - Include hidden gems alongside famous attractions
 - Realistic travel times between locations
 - Bold key names, prices, and important tips"""
+
+
+CHECKLIST_SYSTEM_PROMPT = """You are a meticulous travel preparation specialist. \
+Given a trip itinerary, generate a thorough, practical travel checklist organised into clear sections.
+
+Use this exact structure:
+
+## 📄 Documents & Identification
+## 🛂 Visa & Entry Requirements
+## 💊 Health, Medical & Insurance
+## 🧳 Clothing & Footwear
+## 🎒 Essentials & Accessories
+## 💰 Money & Finance
+## 📱 Apps, Tech & Connectivity
+## 🏨 Bookings to Confirm Before Departure
+## ✅ Day-of-Departure Checklist
+## 🗓️ Destination-Specific Reminders
+
+Guidelines:
+- Use GFM task-list syntax for every item: - [ ] Item text
+- Be specific to the destination, climate, activities, and duration in the itinerary
+- Include items travellers often forget (adaptor type, offline maps, photocopies of docs, etc.)
+- For clothing, be specific about quantities and suitability for the forecast weather
+- Bold critical or easily forgotten items
+- Keep items concise and actionable"""
+
+
+WEATHER_SYSTEM_PROMPT = """You are a brutally honest meteorological analyst specialising in travel weather assessment. \
+Your sole purpose is to give travellers an accurate, unvarnished picture of the weather they will face — \
+no marketing spin, no sugarcoating. If the timing is bad, say so clearly.
+
+Use this exact structure:
+
+## 🌍 Destination & Travel Window Overview
+## 🌡️ Temperature Analysis
+Day-by-day range, average highs/lows, feels-like factors (humidity, wind chill).
+
+## 🌧️ Precipitation & Humidity
+Monthly rainfall averages, number of rainy days, humidity %, what it means in practice.
+
+## ☀️ Sunshine Hours & UV Index
+Average daily sunshine, UV level, skin-protection advice.
+
+## 💨 Wind & Air Quality
+Prevailing winds, dust/smog risks, coastal considerations.
+
+## ⚠️ Hazards & Extreme Weather Risks
+Monsoon, typhoon/cyclone season, flash floods, heatwaves, wildfires — be explicit about timing and severity.
+
+## 📅 Honest Verdict: Is This a Good Time to Visit?
+A frank assessment. If it's a poor time, say so. Mention the best months by contrast.
+
+## 🧳 Weather-Based Packing Essentials
+Specific gear driven by the actual conditions above.
+
+Guidelines:
+- Cite real historical climate data and seasonal norms; quantify wherever possible
+- If the travel dates fall in a problematic season (monsoon, extreme heat, peak storm season), state this prominently
+- Compare the travel window to the best and worst months so the traveller understands the trade-off
+- Do not phrase risks as minor inconveniences if they are genuinely significant
+- End the verdict with a clear one-line summary: Great time / Acceptable / Significant challenges / Not recommended"""
 
 
 # ── Pydantic schemas ──────────────────────────────────────────────────────────
@@ -220,6 +281,8 @@ def _trip_dict(t: Trip, include_customer: bool = True) -> dict:
         d["customer_name"] = t.customer.name
         d["customer_email"] = t.customer.email
     d["itinerary_generated_at"] = t.itinerary.generated_at.isoformat() if t.itinerary else None
+    d["checklist_generated_at"] = t.checklist.generated_at.isoformat() if t.checklist else None
+    d["weather_generated_at"] = t.weather_analysis.generated_at.isoformat() if t.weather_analysis else None
     if t.review:
         comments = _load_comments(t.review.comment)
         # Format all comment entries for the Claude prompt
@@ -508,6 +571,8 @@ def get_trip(trip_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Trip not found")
     data = _trip_dict(trip)
     data["itinerary"] = trip.itinerary.content if trip.itinerary else None
+    data["checklist"] = trip.checklist.content if trip.checklist else None
+    data["weather_analysis"] = trip.weather_analysis.content if trip.weather_analysis else None
     return data
 
 
@@ -612,6 +677,178 @@ def generate_itinerary(trip_id: int, with_review: bool = False, db: Session = De
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
         },
+    )
+
+
+# ── Checklist generation ─────────────────────────────────────────────────────
+
+def _stream_checklist(trip_data: dict, itinerary_content: str, api_key: str):
+    client = anthropic.Anthropic(api_key=api_key)
+    full_content = ""
+    yield f"data: {json.dumps({'type': 'status', 'message': 'Preparing your travel checklist…'})}\n\n"
+
+    date_line = f"Departing: {trip_data['start_date']}\n" if trip_data.get("start_date") else ""
+    budget_line = f"Budget: {trip_data['budget']}\n" if trip_data.get("budget") else ""
+
+    user_prompt = (
+        f"Create a comprehensive travel checklist for this trip.\n\n"
+        f"Trip: {trip_data['num_days']} days to {trip_data['destination']} "
+        f"from {trip_data['departure_city']}, {trip_data['departure_country']}\n"
+        f"{date_line}{budget_line}\n"
+        f"ITINERARY:\n{itinerary_content}"
+    )
+
+    try:
+        with client.messages.stream(
+            model="claude-opus-4-7",
+            max_tokens=4096,
+            thinking={"type": "adaptive"},
+            output_config={"effort": "medium"},
+            system=[{"type": "text", "text": CHECKLIST_SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
+            messages=[{"role": "user", "content": user_prompt}],
+        ) as stream:
+            for event in stream:
+                if event.type == "content_block_start":
+                    if event.content_block.type == "thinking":
+                        yield f"data: {json.dumps({'type': 'thinking', 'message': 'Building your checklist…'})}\n\n"
+                    elif event.content_block.type == "text":
+                        yield f"data: {json.dumps({'type': 'text_start'})}\n\n"
+                elif event.type == "content_block_delta":
+                    if event.delta.type == "text_delta":
+                        text = event.delta.text
+                        full_content += text
+                        yield f"data: {json.dumps({'type': 'text', 'content': text})}\n\n"
+
+        db = SessionLocal()
+        try:
+            existing = db.query(TripChecklist).filter(TripChecklist.trip_id == trip_data["id"]).first()
+            if existing:
+                existing.content = full_content
+                existing.generated_at = datetime.utcnow()
+            else:
+                db.add(TripChecklist(trip_id=trip_data["id"], content=full_content))
+            db.commit()
+            yield f"data: {json.dumps({'type': 'done', 'message': 'Checklist saved!'})}\n\n"
+        except Exception as db_err:
+            yield f"data: {json.dumps({'type': 'done', 'message': f'Generated but could not save: {db_err}'})}\n\n"
+        finally:
+            db.close()
+    except anthropic.AuthenticationError:
+        yield f"data: {json.dumps({'type': 'error', 'message': 'Invalid API key.'})}\n\n"
+    except Exception as exc:
+        yield f"data: {json.dumps({'type': 'error', 'message': str(exc)})}\n\n"
+
+
+@app.get("/api/trips/{trip_id}/generate-checklist")
+def generate_checklist(trip_id: int, db: Session = Depends(get_db)):
+    trip = db.query(Trip).filter(Trip.id == trip_id).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    if not trip.itinerary:
+        raise HTTPException(status_code=400, detail="Generate an itinerary first")
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
+    trip_data = {
+        "id": trip.id,
+        "destination": trip.destination,
+        "departure_city": trip.departure_city,
+        "departure_country": trip.departure_country,
+        "num_days": trip.num_days,
+        "start_date": trip.start_date,
+        "budget": trip.budget,
+    }
+    return StreamingResponse(
+        _stream_checklist(trip_data, trip.itinerary.content, api_key),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
+    )
+
+
+# ── Weather analysis generation ───────────────────────────────────────────────
+
+def _stream_weather_analysis(trip_data: dict, api_key: str):
+    client = anthropic.Anthropic(api_key=api_key)
+    full_content = ""
+    yield f"data: {json.dumps({'type': 'status', 'message': 'Analysing weather patterns…'})}\n\n"
+
+    date_context = (
+        f"Travel dates: {trip_data['start_date']} ({trip_data['num_days']} days)"
+        if trip_data.get("start_date")
+        else f"Duration: {trip_data['num_days']} days (no specific dates — use typical seasonal patterns)"
+    )
+
+    user_prompt = (
+        f"Provide a comprehensive, honest weather analysis for this trip.\n\n"
+        f"Destination: {trip_data['destination']}\n"
+        f"Departing from: {trip_data['departure_city']}, {trip_data['departure_country']}\n"
+        f"{date_context}\n"
+        f"{'Notes: ' + trip_data['notes'] if trip_data.get('notes') else ''}\n\n"
+        "Be completely honest. Do not downplay risks or poor weather periods."
+    )
+
+    try:
+        with client.messages.stream(
+            model="claude-opus-4-7",
+            max_tokens=4096,
+            thinking={"type": "adaptive"},
+            output_config={"effort": "medium"},
+            system=[{"type": "text", "text": WEATHER_SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
+            messages=[{"role": "user", "content": user_prompt}],
+        ) as stream:
+            for event in stream:
+                if event.type == "content_block_start":
+                    if event.content_block.type == "thinking":
+                        yield f"data: {json.dumps({'type': 'thinking', 'message': 'Analysing climate data…'})}\n\n"
+                    elif event.content_block.type == "text":
+                        yield f"data: {json.dumps({'type': 'text_start'})}\n\n"
+                elif event.type == "content_block_delta":
+                    if event.delta.type == "text_delta":
+                        text = event.delta.text
+                        full_content += text
+                        yield f"data: {json.dumps({'type': 'text', 'content': text})}\n\n"
+
+        db = SessionLocal()
+        try:
+            existing = db.query(WeatherAnalysis).filter(WeatherAnalysis.trip_id == trip_data["id"]).first()
+            if existing:
+                existing.content = full_content
+                existing.generated_at = datetime.utcnow()
+            else:
+                db.add(WeatherAnalysis(trip_id=trip_data["id"], content=full_content))
+            db.commit()
+            yield f"data: {json.dumps({'type': 'done', 'message': 'Weather analysis saved!'})}\n\n"
+        except Exception as db_err:
+            yield f"data: {json.dumps({'type': 'done', 'message': f'Generated but could not save: {db_err}'})}\n\n"
+        finally:
+            db.close()
+    except anthropic.AuthenticationError:
+        yield f"data: {json.dumps({'type': 'error', 'message': 'Invalid API key.'})}\n\n"
+    except Exception as exc:
+        yield f"data: {json.dumps({'type': 'error', 'message': str(exc)})}\n\n"
+
+
+@app.get("/api/trips/{trip_id}/generate-weather-analysis")
+def generate_weather_analysis(trip_id: int, db: Session = Depends(get_db)):
+    trip = db.query(Trip).filter(Trip.id == trip_id).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
+    trip_data = {
+        "id": trip.id,
+        "destination": trip.destination,
+        "departure_city": trip.departure_city,
+        "departure_country": trip.departure_country,
+        "num_days": trip.num_days,
+        "start_date": trip.start_date,
+        "notes": trip.notes,
+    }
+    return StreamingResponse(
+        _stream_weather_analysis(trip_data, api_key),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
     )
 
 

@@ -76,6 +76,12 @@ class Trip(Base):
     review = relationship(
         "ItineraryReview", back_populates="trip", uselist=False, cascade="all, delete-orphan"
     )
+    checklist = relationship(
+        "TripChecklist", back_populates="trip", uselist=False, cascade="all, delete-orphan"
+    )
+    weather_analysis = relationship(
+        "WeatherAnalysis", back_populates="trip", uselist=False, cascade="all, delete-orphan"
+    )
 
 
 class Itinerary(Base):
@@ -101,6 +107,28 @@ class ItineraryReview(Base):
 
     trip = relationship("Trip", back_populates="review")
     agent = relationship("User", back_populates="reviews")
+
+
+class TripChecklist(Base):
+    __tablename__ = "trip_checklists"
+
+    id = Column(Integer, primary_key=True, index=True)
+    trip_id = Column(Integer, ForeignKey("trips.id"), nullable=False, unique=True)
+    content = Column(Text, nullable=False)
+    generated_at = Column(DateTime, default=datetime.utcnow)
+
+    trip = relationship("Trip", back_populates="checklist")
+
+
+class WeatherAnalysis(Base):
+    __tablename__ = "weather_analyses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    trip_id = Column(Integer, ForeignKey("trips.id"), nullable=False, unique=True)
+    content = Column(Text, nullable=False)
+    generated_at = Column(DateTime, default=datetime.utcnow)
+
+    trip = relationship("Trip", back_populates="weather_analysis")
 
 
 def create_tables():
