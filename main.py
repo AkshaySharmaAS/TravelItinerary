@@ -57,7 +57,7 @@ Seasonal weather analysis for the destination during the travel period. Be speci
 3 accommodation options at different price points with approximate nightly rates.
 
 ## Day 1: [Evocative Day Title]
-**🌤️ Weather:** [emoji] [Condition], [temp range] — [one-line description]
+**🌤️ Weather:** [emoji] [Condition], [temp range] — [one-line description] [WR:N]
 
 ### 🌅 Morning
 - Activities, attractions with practical details
@@ -83,6 +83,7 @@ Table or list of major costs: flights, accommodation per night, meals/day, activ
 Guidelines:
 - If REAL FLIGHT DATA is provided above the day breakdown, use those exact flight numbers, times, carriers, and prices in the ✈️ Getting There section. Do NOT invent alternative flights when real data is given.
 - Weather emoji: ☀️ sunny · 🌤️ partly cloudy · ⛅ mixed · 🌥️ overcast · 🌦️ light rain · 🌧️ rainy · 🌩️ storms · ❄️ cold/snow · 🌫️ fog · 🌬️ windy
+- Weather rating [WR:N]: replace N with 1–5 score for how pleasant the weather is for tourism that day (1=very bad/storm/extreme heat, 2=poor, 3=acceptable, 4=good, 5=perfect). Always include [WR:N] at the end of every daily weather line.
 - Include hidden gems alongside famous attractions
 - Realistic travel times between locations
 - Bold key names, prices, and important tips"""

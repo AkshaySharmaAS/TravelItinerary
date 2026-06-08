@@ -299,6 +299,10 @@
       border-radius: 8px; padding: 8px 14px; margin: .4rem 0 .9rem;
       color: #166534; font-size: .87rem; font-weight: 500;
     }
+    .weather-rating { display: inline-flex; align-items: center; gap: 1px; margin-left: 10px; vertical-align: middle; }
+    .wr-s { font-size: 1.15rem; line-height: 1; transition: transform .15s; cursor: default; }
+    .wr-s:hover { transform: scale(1.25); }
+    .wr-empty { opacity: .22; filter: grayscale(1); }
     .itin-tip { background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 9px 9px 0; padding: 10px 15px; margin: .9rem 0; color: #78350f; }
     .itin-tip p { margin: 0; font-size: .87rem; }
     #itinerary-content > h1 { font-size: 1.42rem; font-weight: 800; color: var(--text); margin-bottom: .9rem; padding-bottom: .55rem; border-bottom: 3px solid var(--bdr); letter-spacing: -.02em; }
@@ -1388,7 +1392,20 @@ function applyItinStyles(el) {
     else if (t.includes('night'))                                           h3.classList.add('t-night');
     else                                                                    h3.classList.add('t-other');
   });
-  el.querySelectorAll('p').forEach(p => { if (/weather:/i.test(p.textContent)) p.classList.add('itin-weather'); });
+  el.querySelectorAll('p').forEach(p => {
+    if (!/weather:/i.test(p.textContent)) return;
+    p.classList.add('itin-weather');
+    const WR_EMOJIS  = ['😢','😟','😐','🙂','😊'];
+    const WR_COLORS  = ['#ef4444','#f97316','#eab308','#84cc16','#22c55e'];
+    p.innerHTML = p.innerHTML.replace(/\[WR:(\d)\]/gi, (_, raw) => {
+      const r = Math.min(5, Math.max(1, parseInt(raw)));
+      const emoji = WR_EMOJIS[r - 1], color = WR_COLORS[r - 1];
+      let s = `<span class="weather-rating" title="Weather rating ${r}/5">`;
+      for (let i = 1; i <= 5; i++)
+        s += `<span class="wr-s${i > r ? ' wr-empty' : ''}" style="color:${i <= r ? color : '#888'}">${emoji}</span>`;
+      return s + '</span>';
+    });
+  });
   el.querySelectorAll('blockquote').forEach(bq => bq.classList.add('itin-tip'));
 }
 
